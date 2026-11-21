@@ -1,10 +1,11 @@
-const CACHE_NAME = 'synapz-hockey-v15.5-player-walkthrough-polish';
+const CACHE_NAME = 'synapz-hockey-v15.6-red-flag-sniping-system';
 const PRECACHE_ASSETS = [
   './',
   './index.html',
   './manifest.json',
   './engine/safari15_polyfill.js',
   './engine/practice_stations_svg.js',
+  './engine/red_flag_system.js',
   './engine/rink_1000x500.js',
   './engine/validate_drills.js',
   './engine/chalk_reel.js',

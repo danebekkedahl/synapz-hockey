@@ -98,11 +98,37 @@
     body.founder-pin-locked main,
     body.founder-pin-locked #founderBatchDeployBar,
     body.founder-pin-locked #btnLockFounderBoard,
-    body.founder-pin-locked #reportExplainProposalModal {
+    body.founder-pin-locked #reportExplainProposalModal,
+    body.founder-pin-locked #redFlagLightboxModal {
       display: none !important;
     }
     body:not(.founder-pin-locked) #synapzFounderPinGate {
       display: none !important;
+    }
+    @keyframes reportBullseyePulse {
+      0%, 100% { transform: translate(-50%, -50%) scale(1); box-shadow: 0 0 0 2px #ffffff, 0 0 14px rgba(244, 63, 94, 0.95); }
+      50% { transform: translate(-50%, -50%) scale(1.18); box-shadow: 0 0 0 3px #fde047, 0 0 22px rgba(244, 63, 94, 1); }
+    }
+    .synapz-report-bullseye-pin {
+      position: absolute;
+      width: 24px;
+      height: 24px;
+      border-radius: 9999px;
+      border: 3.5px solid #f43f5e;
+      background: rgba(244, 63, 94, 0.25);
+      pointer-events: none;
+      animation: reportBullseyePulse 1.45s infinite ease-in-out;
+    }
+    .synapz-report-bullseye-pin::after {
+      content: "";
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      width: 6px;
+      height: 6px;
+      border-radius: 9999px;
+      background: #fde047;
+      transform: translate(-50%, -50%);
     }
   </style>
 </head>
@@ -175,9 +201,9 @@
           <div class="flex flex-wrap items-center gap-1.5">
             <h1 class="text-sm sm:text-lg font-black tracking-tight synapz-chrome-heading">SYNAPZ HOCKEY</h1>
             <span class="px-2 py-0.5 rounded bg-cyan-400 text-slate-950 text-[10px] font-black uppercase tracking-widest shadow">PLAY. LEARN. DOMINATE.</span>
-            <span id="reportTopLoopBadge" class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-400/40">V15.5 • PRIMARY LIVE ON SYNAPZ-HOCKEY • FROZEN SAFE BACKUP VAULT (v15.4.1) • 8-LAW STUDIO CONSTITUTION</span>
+            <span id="reportTopLoopBadge" class="px-2 py-0.5 rounded-full text-[10px] font-black uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-400/40">V15.6 • PRIMARY LIVE ON SYNAPZ-HOCKEY • FROZEN SAFE BACKUP VAULT (v15.4.1) • 33/33 SHA-256 LOCKS</span>
           </div>
-          <p id="reportTopLoopSubtitle" class="text-[11px] sm:text-xs text-slate-300 mt-0.5">v15.5 Player Walkthrough Polish • Painted 75/25 Gear &amp; North America Atlas + Finger-Drag Spin + Scouting Cards Live on synapz-hockey • tactix-hockey Frozen Safe Backup Vault (v15.4.1) • SHA-256 PIN Gate</p>
+          <p id="reportTopLoopSubtitle" class="text-[11px] sm:text-xs text-slate-300 mt-0.5">v15.6 Visual Red-Flag Bug-Sniping Command Center • Auto-Screenshot + Point-on-Screen Element Picker + Sticky Guardrails Live on synapz-hockey • tactix-hockey Frozen Safe Backup Vault (v15.4.1) • SHA-256 PIN Gate</p>
         </div>
       </div>
       <div class="flex flex-wrap items-center gap-1.5 w-full sm:w-auto">
@@ -196,7 +222,7 @@
       <div class="flex flex-wrap items-center justify-between gap-2">
         <div class="flex flex-wrap items-center gap-1.5">
           <span id="reportActiveEnvBadge" class="px-2.5 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-400 text-emerald-200 text-[10px] font-black uppercase tracking-wider">🏆 Detecting Release Lane...</span>
-          <span class="px-2.5 py-0.5 rounded-full bg-cyan-500/20 border border-cyan-400/60 text-cyan-200 text-[10px] font-black uppercase">📜 8-Law Studio Constitution + 25/25 SHA-256 Locks</span>
+          <span class="px-2.5 py-0.5 rounded-full bg-cyan-500/20 border border-cyan-400/60 text-cyan-200 text-[10px] font-black uppercase">📜 8-Law Studio Constitution + 33/33 SHA-256 Locks</span>
         </div>
         <div class="flex flex-wrap items-center gap-1.5 text-[11px] font-black">
           <a href="https://danebekkedahl.github.io/synapz-hockey/" target="_blank" rel="noopener" class="px-2.5 py-1 rounded-lg bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-400/70 text-emerald-200">🏆 Primary Live Tablet Rink: synapz-hockey ↗</a>
@@ -207,7 +233,7 @@
         <div class="p-2.5 rounded-xl bg-slate-950/90 border border-emerald-500/40">
           <div class="text-[10px] font-black uppercase text-emerald-300">1. Primary Live Deploy (synapz-hockey)</div>
           <code class="block mt-1 px-2 py-1 rounded bg-slate-900 text-emerald-300 font-mono text-[11px]">node deploy-github-pages.js</code>
-          <div class="text-[10px] text-slate-400 mt-1">Verifies 25/25 SHA-256 locks &amp; pushes exclusively to <strong>synapz-hockey</strong> (Evan &amp; Dane iPad link).</div>
+          <div class="text-[10px] text-slate-400 mt-1">Verifies 33/33 SHA-256 locks &amp; pushes exclusively to <strong>synapz-hockey</strong> (Evan &amp; Dane iPad link).</div>
         </div>
         <div class="p-2.5 rounded-xl bg-slate-950/90 border border-cyan-500/40">
           <div class="text-[10px] font-black uppercase text-cyan-300">2. Save Frozen Backup Checkpoint</div>
@@ -229,7 +255,7 @@
             if (b) {
               b.textContent = isBackupVault
                 ? '🛡️ ACTIVE LANE: FROZEN SAFE BACKUP VAULT (tactix-hockey • v15.4.1)'
-                : '🏆 ACTIVE LANE: PRIMARY LIVE TABLET RINK (synapz-hockey • v15.5)';
+                : '🏆 ACTIVE LANE: PRIMARY LIVE TABLET RINK (synapz-hockey • v15.6)';
               b.className = isBackupVault
                 ? 'px-2.5 py-0.5 rounded-full bg-cyan-500/20 border border-cyan-400 text-cyan-200 text-[10px] font-black uppercase tracking-wider'
                 : 'px-2.5 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-400 text-emerald-200 text-[10px] font-black uppercase tracking-wider';
@@ -246,7 +272,7 @@
       <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 pb-3">
         <div>
           <div class="flex flex-wrap items-center gap-1.5">
-            <span id="founderBoardVersionPill" class="px-2.5 py-0.5 rounded bg-emerald-400 text-slate-950 text-[10px] font-black uppercase tracking-widest">🏆 V15.5 • LIVE ON SYNAPZ-HOCKEY • FROZEN SAFE BACKUP VAULT • 8-LAW CONSTITUTION</span>
+            <span id="founderBoardVersionPill" class="px-2.5 py-0.5 rounded bg-emerald-400 text-slate-950 text-[10px] font-black uppercase tracking-widest">🏆 V15.6 • LIVE ON SYNAPZ-HOCKEY • FROZEN SAFE BACKUP VAULT • 33/33 SHA-256 LOCKS</span>
             <span class="px-2.5 py-0.5 rounded bg-rose-500/20 border border-rose-400/50 text-rose-200 text-[10px] font-black uppercase">🚩 Real-Time Cross-Device Red-Flag Feed</span>
             <span class="px-2.5 py-0.5 rounded bg-sky-500/20 border border-sky-400/40 text-sky-300 text-[10px] font-black">danebekkedahl@gmail.com • evanbekk@gmail.com</span>
           </div>
@@ -296,31 +322,74 @@
 
       <!-- TAB 1: 📥 TO REVIEW (#1 TOP PRIORITY: LIVE OPEN RED FLAGS) -->
       <div id="inboxTabPanelToReview" class="w-full space-y-4">
-        <!-- #1 TOP PRIORITY PANEL: 🚩 LIVE OPEN RED FLAGS (REAL-TIME CROSS-DEVICE FEED) -->
-        <div id="liveOpenRedFlagsPanel" class="rounded-2xl bg-slate-950/95 border-2 border-rose-500/85 p-3.5 sm:p-4 shadow-[0_0_28px_rgba(244,63,94,0.22)] space-y-3">
-          <div class="flex flex-wrap items-start justify-between gap-2.5 border-b border-rose-500/30 pb-3">
-            <div class="min-w-0">
-              <div class="flex flex-wrap items-center gap-2">
-                <span class="px-2.5 py-0.5 rounded-full bg-rose-500 text-white text-[10px] font-black uppercase tracking-widest">🚩 #1 Top Priority</span>
-                <span id="liveOpenRedFlagsCountBadge" class="px-2.5 py-0.5 rounded-full bg-rose-500/20 border border-rose-400/60 text-rose-200 text-[11px] font-black">0 Open Flags</span>
-                <span id="liveOpenRedFlagsSyncStatus" class="text-[11px] font-semibold text-slate-400">Syncing with Supabase...</span>
+        <!-- #1 TOP PRIORITY PANEL: 🚩 V15.6 BUG-CRUSHING COMMAND CENTER (SNAPSHOTS + PINS + GUARDRAILS + EXPORTS) -->
+        <div id="liveOpenRedFlagsPanel" class="rounded-2xl bg-slate-950/95 border-2 border-rose-500/85 p-3.5 sm:p-4 shadow-[0_0_28px_rgba(244,63,94,0.22)] space-y-2.5">
+          <div class="space-y-2.5 border-b border-rose-500/30 pb-2.5">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <div class="min-w-0 flex-1">
+                <div class="flex flex-wrap items-center gap-2">
+                  <span class="px-2.5 py-0.5 rounded-full bg-rose-500 text-white text-[10px] font-black uppercase tracking-widest whitespace-nowrap">🚩 #1 Bug-Crushing Command Center</span>
+                  <span id="liveOpenRedFlagsCountBadge" class="px-2.5 py-0.5 rounded-full bg-rose-500/20 border border-rose-400/60 text-rose-200 text-[11px] font-black whitespace-nowrap">0 Open Flags</span>
+                  <span id="liveOpenRedFlagsSyncStatus" class="text-[11px] font-semibold text-slate-400">Syncing with Supabase...</span>
+                </div>
+                <h4 class="text-sm sm:text-base font-black text-white mt-1">🚩 LIVE VISUAL RED FLAGS — AUTO-SCREENSHOTS, BULLSEYE PINS &amp; GUARDRAIL TAGS</h4>
               </div>
-              <h4 class="text-sm sm:text-lg font-black text-white mt-1">🚩 LIVE OPEN RED FLAGS (REAL-TIME CROSS-DEVICE FEED)</h4>
-              <p class="text-[11px] sm:text-xs text-slate-300">Auto-streams open <code>🚩</code> flags from every player iPad, phone, and desktop via <code>public.pucksense_agent_inbox</code>. Resolve or delete test flags in 1 tap, or copy all open flags straight into Antigravity.</p>
+              <button id="btnRefreshLiveRedFlags" type="button" class="px-3 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-cyan-400/60 text-cyan-200 text-xs font-black transition cursor-pointer shrink-0">
+                🔄 Refresh
+              </button>
             </div>
-            <div class="flex flex-wrap items-center gap-2 w-full sm:w-auto">
-              <button id="btnRefreshLiveRedFlags" type="button" class="flex-1 sm:flex-initial px-3 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-cyan-400/60 text-cyan-200 text-xs font-black transition cursor-pointer">
-                🔄 Refresh Live Flags
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <button id="btnCopyFlagsForGeminiArchitect" type="button" class="w-full px-3.5 py-2 rounded-xl bg-gradient-to-r from-amber-400 to-yellow-300 hover:from-amber-300 hover:to-yellow-200 border-2 border-yellow-200 text-slate-950 text-xs font-black shadow-lg transition cursor-pointer text-center">
+                📋 Copy Open Flags for Gemini Architect Review
               </button>
-              <button id="btnCopyAllOpenFlagsForAntigravity" type="button" class="flex-1 sm:flex-initial px-3.5 py-2 rounded-xl bg-gradient-to-r from-rose-500 to-amber-400 hover:from-rose-400 hover:to-amber-300 text-slate-950 text-xs font-black shadow-lg transition cursor-pointer">
-                📋 Copy All Open Flags for Antigravity
+              <button id="btnCopySafeQuickFixPrompt" type="button" class="w-full px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 border-2 border-emerald-400/80 text-emerald-200 text-xs font-black shadow transition cursor-pointer text-center">
+                ⚡ Copy Safe Quick-Fix Prompt for Antigravity
               </button>
+              <button id="btnCopyAllOpenFlagsForAntigravity" type="button" class="hidden" aria-hidden="true">Copy Open Flags</button>
+            </div>
+          </div>
+
+          <!-- Status & Author Filter Bars -->
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 bg-slate-900/80 border border-slate-800 rounded-xl p-2.5">
+            <div class="flex flex-wrap items-center gap-1.5" id="redFlagStatusFilterBar" role="group" aria-label="Filter Flags by Status">
+              <span class="text-[10px] font-black uppercase tracking-wider text-slate-400 mr-1">Status:</span>
+              <button type="button" data-flag-status-filter="open" class="px-2.5 py-1 rounded-lg bg-rose-500 text-white text-[11px] font-black cursor-pointer">🔴 Open (<span data-status-count="open">0</span>)</button>
+              <button type="button" data-flag-status-filter="ready_to_fix" class="px-2.5 py-1 rounded-lg bg-slate-950 border border-slate-700 text-slate-300 text-[11px] font-bold cursor-pointer">✅ Ready to Fix (<span data-status-count="ready_to_fix">0</span>)</button>
+              <button type="button" data-flag-status-filter="hold_red_flag" class="px-2.5 py-1 rounded-lg bg-slate-950 border border-slate-700 text-slate-300 text-[11px] font-bold cursor-pointer">⏸️ Hold (<span data-status-count="hold_red_flag">0</span>)</button>
+              <button type="button" data-flag-status-filter="resolved_red_flag" class="px-2.5 py-1 rounded-lg bg-slate-950 border border-slate-700 text-slate-300 text-[11px] font-bold cursor-pointer">🏁 Fixed History (<span data-status-count="resolved_red_flag">0</span>)</button>
+              <button type="button" data-flag-status-filter="all" class="px-2.5 py-1 rounded-lg bg-slate-950 border border-slate-700 text-slate-300 text-[11px] font-bold cursor-pointer">All (<span data-status-count="all">0</span>)</button>
+            </div>
+            <div class="flex flex-wrap items-center gap-1.5" id="redFlagAuthorFilterBar" role="group" aria-label="Filter Flags by Author">
+              <span class="text-[10px] font-black uppercase tracking-wider text-slate-400 mr-1">Author:</span>
+              <button type="button" data-flag-author-filter="All" class="px-2.5 py-1 rounded-lg bg-cyan-400 text-slate-950 text-[11px] font-black cursor-pointer">All</button>
+              <button type="button" data-flag-author-filter="Coach Dane" class="px-2.5 py-1 rounded-lg bg-slate-950 border border-slate-700 text-slate-300 text-[11px] font-bold cursor-pointer">Coach Dane</button>
+              <button type="button" data-flag-author-filter="Coach Evan" class="px-2.5 py-1 rounded-lg bg-slate-950 border border-slate-700 text-slate-300 text-[11px] font-bold cursor-pointer">Coach Evan</button>
+              <button type="button" data-flag-author-filter="Whelan" class="px-2.5 py-1 rounded-lg bg-slate-950 border border-slate-700 text-slate-300 text-[11px] font-bold cursor-pointer">Whelan</button>
+              <button type="button" data-flag-author-filter="Rhett" class="px-2.5 py-1 rounded-lg bg-slate-950 border border-slate-700 text-slate-300 text-[11px] font-bold cursor-pointer">Rhett</button>
             </div>
           </div>
 
           <div id="liveOpenRedFlagsActionToast" class="hidden p-2.5 rounded-xl bg-emerald-950/90 border border-emerald-400/70 text-emerald-200 text-xs font-black"></div>
 
-          <div id="liveOpenRedFlagsList" class="space-y-2.5"></div>
+          <div id="liveOpenRedFlagsList" class="space-y-3"></div>
+        </div>
+
+        <!-- Full-Size Snapshot Lightbox Modal -->
+        <div id="redFlagLightboxModal" class="hidden fixed inset-0 z-[1200] bg-slate-950/95 backdrop-blur-md flex items-center justify-center p-3 sm:p-5 overflow-y-auto">
+          <div class="w-full max-w-4xl rounded-2xl bg-slate-900 border-2 border-rose-400 shadow-2xl p-4 space-y-3 my-auto">
+            <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-2.5">
+              <div>
+                <span id="redFlagLightboxMetaPill" class="px-2.5 py-0.5 rounded-full bg-rose-500 text-white text-[10px] font-black uppercase">🚩 Flag Zoom</span>
+                <h4 id="redFlagLightboxTitle" class="text-sm sm:text-base font-black text-white mt-1">Pinned Screen Snapshot</h4>
+              </div>
+              <button id="btnCloseRedFlagLightbox" type="button" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-600 text-white text-xs font-black cursor-pointer">✕ Close Zoom</button>
+            </div>
+            <div id="redFlagLightboxStage" class="relative w-full rounded-xl overflow-hidden bg-slate-950 border border-slate-700 mx-auto" style="aspect-ratio: 640 / 440; max-height: 70vh;">
+              <img id="redFlagLightboxImg" alt="Full Flag Snapshot" class="w-full h-full object-fill block" />
+              <div id="redFlagLightboxPin" class="synapz-report-bullseye-pin" style="left:50%;top:50%;width:32px;height:32px;"></div>
+            </div>
+            <div id="redFlagLightboxFooter" class="p-3 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-200 space-y-1"></div>
+          </div>
         </div>
 
         <div id="inboxToReviewCardsContainer" class="w-full space-y-3"></div>
@@ -4114,10 +4183,23 @@
     window.sendManualFounderSummaryDigestEmail = sendManualFounderSummaryDigestEmail;
 
     // =========================================================================
-    // V14.2 #1 TOP PRIORITY: LIVE CROSS-DEVICE OPEN RED FLAGS CONTROLLER
+    // V15.6 #1 TOP PRIORITY: VISUAL RED-FLAG BUG-CRUSHING COMMAND CENTER
     // =========================================================================
+    window._allRedFlagsCache = [];
     window._liveOpenRedFlagsCache = [];
     window._liveRedFlagsPollTimer = null;
+    window._redFlagStatusFilter = 'open';
+    window._redFlagAuthorFilter = 'All';
+    window._armedDeleteTimers = {};
+
+    function getSavedReplyAuthor() {
+      try {
+        const v = localStorage.getItem('synapz_report_reply_author');
+        return v === 'Coach Evan' ? 'Coach Evan' : 'Coach Dane';
+      } catch (_) {
+        return 'Coach Dane';
+      }
+    }
 
     function escapeHtmlSafe(val) {
       return String(val ?? '')
@@ -4136,7 +4218,11 @@
       clearTimeout(window._liveRedFlagToastHideTimer);
       window._liveRedFlagToastHideTimer = setTimeout(() => {
         t.classList.add('hidden');
-      }, 3800);
+      }, 4000);
+    }
+
+    function isOpenFlagStatus(st) {
+      return !st || st === 'open_red_flag' || st === 'flagged_for_council_review' || st === 'open';
     }
 
     function extractNormalizedFlagFields(row) {
@@ -4155,32 +4241,75 @@
         }
       }
 
-      const viewportClean = d.viewport ? String(d.viewport).replace('x', '×') : '';
-      const deviceBadge = d.deviceLabel || (viewportClean ? `Device ${viewportClean}` : (d.userAgentShort || 'Cross-Device Web'));
+      const devInfo = (d.deviceInfo && typeof d.deviceInfo === 'object') ? d.deviceInfo : {};
+      const appCtx = (d.appContext && typeof d.appContext === 'object') ? d.appContext : {};
+
+      const rawVp = devInfo.viewport || d.viewport || '';
+      const viewportClean = rawVp ? String(rawVp).replace('x', '×') : '';
+      let deviceBadge = '';
+      if (devInfo.osVersion || devInfo.appVersion) {
+        const dParts = [];
+        if (devInfo.osVersion) dParts.push(devInfo.osVersion);
+        if (viewportClean) dParts.push(viewportClean);
+        if (devInfo.appVersion) dParts.push(devInfo.appVersion);
+        deviceBadge = dParts.join(' • ');
+      } else {
+        deviceBadge = d.deviceLabel || (viewportClean ? `Device ${viewportClean}` : (d.userAgentShort || 'Cross-Device Web'));
+      }
 
       const rawScenario = String(row?.scenario_id || '').trim();
       const isScreenScenario = !rawScenario || /^SCREEN[:_-]/i.test(rawScenario) || rawScenario.toLowerCase() === 'lobby';
-      const drillId = d.drillId || (!isScreenScenario ? rawScenario : null);
+      const drillId = appCtx.activeDrillId || d.drillId || (!isScreenScenario ? rawScenario : null);
       const drillTitle = d.drillTitle || d.scenarioTitle || '';
-      const gameMode = d.gameMode || d.mode || '';
-      const positionRole = d.positionRole || '';
-      const ageTier = d.ageTier || d.ageDivision || row?.age_division || '';
-      const activeScreen = d.activeScreen || d.activeScreenOrModal || d.view || (isScreenScenario ? rawScenario.replace(/^SCREEN[:_-]/i, '') : 'Ice Rink');
-      const quickTag = d.quickTag || '';
+      const gameMode = appCtx.activeMode || d.gameMode || d.mode || '';
+      const positionRole = appCtx.youAreRole || d.positionRole || '';
+      const ageTier = appCtx.ageDivision || d.ageTier || d.ageDivision || row?.age_division || '';
+      const screenName = appCtx.screen || d.activeScreen || d.activeScreenOrModal || d.view || (isScreenScenario ? rawScenario.replace(/^SCREEN[:_-]/i, '') : 'Ice Rink');
+      const openModalTitle = appCtx.openModalTitle || '';
 
       let contextPill = '';
       if (drillId) {
         const parts = [`Drill: ${drillId}`];
         if (gameMode) parts.push(`Mode: ${gameMode}`);
-        if (positionRole) parts.push(`Role: ${positionRole}`);
+        if (positionRole) parts.push(`YOU ARE: ${positionRole}`);
         if (ageTier) parts.push(ageTier);
         if (drillTitle) parts.push(`(${drillTitle})`);
         contextPill = parts.join(' • ');
       } else {
-        const parts = [`Screen: ${activeScreen || 'Main Rink Lobby'}`];
+        const parts = [`Screen: ${screenName || 'Main Rink Lobby'}`];
+        if (openModalTitle && !String(screenName).includes(openModalTitle)) {
+          parts.push(`Modal: ${openModalTitle}`);
+        }
         if (ageTier) parts.push(ageTier);
         contextPill = parts.join(' • ');
       }
+
+      const author = d.author || row?.created_by || d.activeProfile || 'Founder';
+      const intentTag = d.intentTag || 'bug';
+      const quickTag = d.quickTag || '';
+
+      let intentLabel = '🐛 Little Bug / Glitch';
+      if (intentTag === 'keep_style_tweak') intentLabel = '🎨 KEEP LOOK — TWEAK ONLY';
+      else if (intentTag === 'copy_audio') intentLabel = '📝 Wording / Audio';
+      else if (intentTag === 'idea') intentLabel = '💡 Feature Idea';
+      else if (quickTag && !d.intentTag) intentLabel = `🏷️ ${quickTag}`;
+
+      const pinObj = (d.pin && typeof d.pin === 'object') ? d.pin : { xPct: 50, yPct: 50 };
+      const pin = {
+        xPct: Number.isFinite(Number(pinObj.xPct)) ? Number(pinObj.xPct) : 50,
+        yPct: Number.isFinite(Number(pinObj.yPct)) ? Number(pinObj.yPct) : 50
+      };
+
+      const domTarget = (d.domTarget && typeof d.domTarget === 'object') ? d.domTarget : null;
+      let domSummary = '';
+      if (domTarget) {
+        const sel = domTarget.selector || (`<${domTarget.tag || 'div'}${domTarget.id ? '#' + domTarget.id : ''}>`);
+        domSummary = sel + (domTarget.textSnippet ? ` "${domTarget.textSnippet}"` : '');
+      }
+
+      const snapshotDataUrl = typeof d.snapshotDataUrl === 'string' && d.snapshotDataUrl.startsWith('data:image/')
+        ? d.snapshotDataUrl
+        : '';
 
       let verbatimNote = d.founderNote || d.note || '';
       if (!verbatimNote) {
@@ -4190,38 +4319,180 @@
           .trim() || String(row?.summary || '(No note entered)');
       }
 
+      const idStr = String(row?.id || '');
+      const flagCode = d.flagCode || ('#' + idStr.replace(/-/g, '').slice(0, 4).toUpperCase());
+      const founderComments = Array.isArray(d.founderComments) ? d.founderComments : [];
+      const resolvedInBuild = d.resolvedInBuild || null;
+
       return {
-        id: row?.id || '',
+        id: idStr,
+        flagCode,
         createdAtIso: rawTs,
         formattedTime,
+        author,
+        createdBy: author,
         deviceBadge,
+        osVersion: devInfo.osVersion || '',
+        browser: devInfo.browser || '',
+        appVersion: devInfo.appVersion || '',
         userAgentShort: d.userAgentShort || '',
-        viewport: d.viewport || '',
+        viewport: rawVp,
         drillId,
         drillTitle,
         gameMode,
         positionRole,
         ageTier,
-        activeScreen,
+        activeScreen: screenName,
+        openModalTitle,
+        intentTag,
+        intentLabel,
         quickTag,
         contextPill,
+        pin,
+        domTarget,
+        domSummary,
+        snapshotDataUrl,
+        founderComments,
+        resolvedInBuild,
         verbatimNote,
-        createdBy: row?.created_by || d.activeProfile || 'Founder',
         status: row?.status || 'open_red_flag',
+        isTestSink: Boolean(row?._testModeSink),
         rawDetails: d
       };
     }
 
-    function renderLiveOpenRedFlagsPanel(rows = window._liveOpenRedFlagsCache || []) {
+    function getFilteredRedFlags(allRows = window._allRedFlagsCache || []) {
+      const stFilter = window._redFlagStatusFilter || 'open';
+      const auFilter = window._redFlagAuthorFilter || 'All';
+      return allRows.filter((row) => {
+        const f = extractNormalizedFlagFields(row);
+        let stMatch = true;
+        if (stFilter === 'open') stMatch = isOpenFlagStatus(f.status);
+        else if (stFilter === 'ready_to_fix') stMatch = f.status === 'ready_to_fix';
+        else if (stFilter === 'hold_red_flag') stMatch = f.status === 'hold_red_flag';
+        else if (stFilter === 'resolved_red_flag') stMatch = f.status === 'resolved_red_flag' || f.status === 'resolved';
+        else stMatch = true;
+
+        let auMatch = true;
+        if (auFilter && auFilter !== 'All') {
+          auMatch = String(f.author || '').toLowerCase() === String(auFilter).toLowerCase();
+        }
+        return stMatch && auMatch;
+      });
+    }
+
+    function syncFilterBarStylesAndCounts(allRows = window._allRedFlagsCache || []) {
+      const counts = { open: 0, ready_to_fix: 0, hold_red_flag: 0, resolved_red_flag: 0, all: allRows.length };
+      allRows.forEach((r) => {
+        const st = r?.status || 'open_red_flag';
+        if (isOpenFlagStatus(st)) counts.open++;
+        else if (st === 'ready_to_fix') counts.ready_to_fix++;
+        else if (st === 'hold_red_flag') counts.hold_red_flag++;
+        else if (st === 'resolved_red_flag' || st === 'resolved') counts.resolved_red_flag++;
+      });
+
+      Object.keys(counts).forEach((k) => {
+        const el = document.querySelector(`[data-status-count="${k}"]`);
+        if (el) el.textContent = String(counts[k]);
+      });
+
+      document.querySelectorAll('#redFlagStatusFilterBar [data-flag-status-filter]').forEach((btn) => {
+        const val = btn.getAttribute('data-flag-status-filter');
+        const active = val === window._redFlagStatusFilter;
+        btn.className = active
+          ? 'px-2.5 py-1 rounded-lg bg-rose-500 text-white text-[11px] font-black shadow cursor-pointer transition'
+          : 'px-2.5 py-1 rounded-lg bg-slate-950 hover:bg-slate-800 border border-slate-700 text-slate-300 text-[11px] font-bold cursor-pointer transition';
+      });
+
+      document.querySelectorAll('#redFlagAuthorFilterBar [data-flag-author-filter]').forEach((btn) => {
+        const val = btn.getAttribute('data-flag-author-filter');
+        const active = val === window._redFlagAuthorFilter;
+        btn.className = active
+          ? 'px-2.5 py-1 rounded-lg bg-cyan-400 text-slate-950 text-[11px] font-black shadow cursor-pointer transition'
+          : 'px-2.5 py-1 rounded-lg bg-slate-950 hover:bg-slate-800 border border-slate-700 text-slate-300 text-[11px] font-bold cursor-pointer transition';
+      });
+    }
+
+    function openRedFlagLightbox(flagId) {
+      const row = (window._allRedFlagsCache || []).find(r => String(r.id) === String(flagId));
+      if (!row) return;
+      const f = extractNormalizedFlagFields(row);
+      if (!f.snapshotDataUrl) return;
+
+      const modal = document.getElementById('redFlagLightboxModal');
+      const img = document.getElementById('redFlagLightboxImg');
+      const pin = document.getElementById('redFlagLightboxPin');
+      const metaPill = document.getElementById('redFlagLightboxMetaPill');
+      const titleEl = document.getElementById('redFlagLightboxTitle');
+      const footerEl = document.getElementById('redFlagLightboxFooter');
+
+      if (!modal || !img) return;
+      img.src = f.snapshotDataUrl;
+      if (pin) {
+        pin.style.left = f.pin.xPct + '%';
+        pin.style.top = f.pin.yPct + '%';
+      }
+      if (metaPill) metaPill.textContent = `🚩 ${f.flagCode} • ${f.author} • ${f.deviceBadge}`;
+      if (titleEl) titleEl.textContent = `${f.contextPill} — Pin @ (${f.pin.xPct}%, ${f.pin.yPct}%)`;
+      if (footerEl) {
+        footerEl.innerHTML = `
+          <div class="flex flex-wrap items-center gap-2">
+            <span class="px-2 py-0.5 rounded bg-amber-400/20 border border-amber-400 text-amber-200 font-black text-[11px]">${escapeHtmlSafe(f.intentLabel)}</span>
+            ${f.domSummary ? `<code class="px-2 py-0.5 rounded bg-slate-900 border border-cyan-400/50 text-cyan-200 font-mono text-[11px]">🎯 ${escapeHtmlSafe(f.domSummary)}</code>` : ''}
+          </div>
+          <div class="text-sm font-black text-white pt-1">“${escapeHtmlSafe(f.verbatimNote)}”</div>
+        `;
+      }
+      modal.classList.remove('hidden');
+    }
+    window.openRedFlagLightbox = openRedFlagLightbox;
+
+    function closeRedFlagLightbox() {
+      const modal = document.getElementById('redFlagLightboxModal');
+      if (modal) modal.classList.add('hidden');
+    }
+    window.closeRedFlagLightbox = closeRedFlagLightbox;
+
+    function renderStatusBadgeHtml(f) {
+      if (f.status === 'ready_to_fix') {
+        return '<span class="px-2.5 py-0.5 rounded-full bg-emerald-500 text-slate-950 text-[10px] font-black uppercase">✅ Ready to Fix</span>';
+      }
+      if (f.status === 'hold_red_flag') {
+        return '<span class="px-2.5 py-0.5 rounded-full bg-amber-500/25 border border-amber-400 text-amber-200 text-[10px] font-black uppercase">⏸️ Hold</span>';
+      }
+      if (f.status === 'resolved_red_flag' || f.status === 'resolved') {
+        const bld = f.resolvedInBuild ? ` (${escapeHtmlSafe(f.resolvedInBuild)})` : '';
+        return `<span class="px-2.5 py-0.5 rounded-full bg-sky-500/25 border border-sky-400 text-sky-200 text-[10px] font-black uppercase">🏁 Fixed${bld}</span>`;
+      }
+      return '<span class="px-2.5 py-0.5 rounded-full bg-rose-500 text-white text-[10px] font-black uppercase">🔴 Open</span>';
+    }
+
+    function renderIntentGuardrailPillHtml(f) {
+      if (f.intentTag === 'keep_style_tweak') {
+        return `<span class="px-2.5 py-0.5 rounded-full bg-amber-400 border-2 border-yellow-200 text-slate-950 text-[11px] font-black shadow" data-flag-intent-pill="keep_style_tweak">🎨 KEEP LOOK — TWEAK ONLY</span>`;
+      }
+      if (f.intentTag === 'copy_audio') {
+        return `<span class="px-2.5 py-0.5 rounded-full bg-cyan-500/20 border border-cyan-400/70 text-cyan-200 text-[11px] font-black" data-flag-intent-pill="copy_audio">${escapeHtmlSafe(f.intentLabel)}</span>`;
+      }
+      if (f.intentTag === 'idea') {
+        return `<span class="px-2.5 py-0.5 rounded-full bg-purple-500/20 border border-purple-400/70 text-purple-200 text-[11px] font-black" data-flag-intent-pill="idea">${escapeHtmlSafe(f.intentLabel)}</span>`;
+      }
+      return `<span class="px-2.5 py-0.5 rounded-full bg-rose-500/20 border border-rose-400/70 text-rose-200 text-[11px] font-black" data-flag-intent-pill="bug">${escapeHtmlSafe(f.intentLabel)}</span>`;
+    }
+
+    function renderLiveOpenRedFlagsPanel(rowsArg = null) {
       if (!window.__founderPinUnlocked) return;
+      const allRows = Array.isArray(rowsArg) ? rowsArg : (window._allRedFlagsCache || []);
+      window._liveOpenRedFlagsCache = allRows.filter(r => isOpenFlagStatus(r?.status) || r?.status === 'ready_to_fix');
+
       const listEl = document.getElementById('liveOpenRedFlagsList');
       const countBadge = document.getElementById('liveOpenRedFlagsCountBadge');
       const syncEl = document.getElementById('liveOpenRedFlagsSyncStatus');
-      const openList = Array.isArray(rows) ? rows : [];
 
+      const openAndReadyCount = window._liveOpenRedFlagsCache.length;
       if (countBadge) {
-        countBadge.textContent = `${openList.length} Open Flag${openList.length === 1 ? '' : 's'}`;
-        countBadge.className = openList.length > 0
+        countBadge.textContent = `${openAndReadyCount} Active Flag${openAndReadyCount === 1 ? '' : 's'}`;
+        countBadge.className = openAndReadyCount > 0
           ? 'px-2.5 py-0.5 rounded-full bg-rose-500 text-white text-[11px] font-black shadow'
           : 'px-2.5 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-400/60 text-emerald-200 text-[11px] font-black';
       }
@@ -4230,81 +4501,216 @@
         syncEl.textContent = `Live • Synced ${stamp} (15s auto-refresh)`;
       }
 
+      syncFilterBarStylesAndCounts(allRows);
+
       const activePool = getActiveBatchAndReassessedItems();
       const pendingCouncil = activePool.filter(x => x.status === 'awaiting_founder_approval' || x.status === 'reassessed_awaiting_approval').length;
       const tabCountEl = document.getElementById('tabCountToReview');
-      if (tabCountEl) tabCountEl.textContent = String(pendingCouncil + openList.length);
+      if (tabCountEl) tabCountEl.textContent = String(pendingCouncil + openAndReadyCount);
 
       if (!listEl) return;
-      if (openList.length === 0) {
+      const visibleList = getFilteredRedFlags(allRows);
+
+      if (visibleList.length === 0) {
         listEl.innerHTML = `
-          <div class="p-3.5 rounded-xl bg-emerald-950/40 border border-emerald-400/50 text-xs sm:text-sm font-bold text-emerald-200 text-center">
-            ✅ 0 Open Red Flags in Supabase — Tap <strong>🚩 Red Flag</strong> inside any drill or room on any device and it streams here live!
+          <div class="p-4 rounded-xl bg-emerald-950/40 border border-emerald-400/50 text-xs sm:text-sm font-bold text-emerald-200 text-center">
+            ✅ 0 Red Flags matching current filter (<strong>${escapeHtmlSafe(window._redFlagStatusFilter)}</strong> • <strong>${escapeHtmlSafe(window._redFlagAuthorFilter)}</strong>) — Tap <strong>🚩 Flag</strong> inside the app on any tablet and it streams here live!
           </div>
         `;
         return;
       }
 
-      listEl.innerHTML = openList.map((row) => {
+      const defaultReplyAuthor = getSavedReplyAuthor();
+
+      listEl.innerHTML = visibleList.map((row) => {
         const f = extractNormalizedFlagFields(row);
+        const isFixed = f.status === 'resolved_red_flag' || f.status === 'resolved';
+        const isReady = f.status === 'ready_to_fix';
+        const isHold = f.status === 'hold_red_flag';
+
+        const thumbHtml = f.snapshotDataUrl
+          ? `
+            <button type="button" data-open-lightbox-flag="${escapeHtmlSafe(f.id)}" class="group relative w-full sm:w-56 shrink-0 rounded-xl overflow-hidden bg-slate-950 border-2 border-slate-700 hover:border-rose-400 transition cursor-pointer text-left" style="aspect-ratio: 640 / 440;">
+              <img src="${escapeHtmlSafe(f.snapshotDataUrl)}" alt="Flag ${escapeHtmlSafe(f.flagCode)} Snapshot" class="w-full h-full object-fill block" />
+              <div class="synapz-report-bullseye-pin" style="left:${f.pin.xPct}%;top:${f.pin.yPct}%;"></div>
+              <span class="absolute bottom-1.5 right-1.5 px-2 py-0.5 rounded bg-slate-950/90 border border-slate-600 text-[10px] font-black text-cyan-200">🔍 Zoom Pin</span>
+            </button>
+          `
+          : `
+            <div class="w-full sm:w-44 shrink-0 rounded-xl bg-slate-950/90 border border-slate-800 p-3 flex flex-col items-center justify-center text-center gap-1" style="min-height: 112px;">
+              <span class="text-xl">🚩</span>
+              <span class="text-[10px] font-black uppercase text-slate-400">Pre-v15.6 Text Flag</span>
+              <span class="text-[10px] font-bold text-rose-300">${escapeHtmlSafe(f.drillId || f.activeScreen)}</span>
+            </div>
+          `;
+
+        const commentsHtml = f.founderComments.length
+          ? `<div class="space-y-1 pt-1" data-founder-comments-list="${escapeHtmlSafe(f.id)}">` +
+              f.founderComments.map(c => `
+                <div class="px-2.5 py-1.5 rounded-lg bg-slate-950/90 border border-cyan-500/35 text-xs text-slate-200 flex flex-wrap items-center justify-between gap-2">
+                  <span><strong class="text-cyan-300">💬 ${escapeHtmlSafe(c.author || 'Co-Founder')}:</strong> ${escapeHtmlSafe(c.text || '')}</span>
+                  <span class="text-[10px] text-slate-500">${c.createdAt ? escapeHtmlSafe(new Date(c.createdAt).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })) : ''}</span>
+                </div>
+              `).join('') +
+            `</div>`
+          : `<div class="hidden" data-founder-comments-list="${escapeHtmlSafe(f.id)}"></div>`;
+
         return `
-          <div class="synapz-live-redflag-card p-3.5 rounded-2xl bg-slate-900/95 border-2 border-rose-400/75 shadow-lg space-y-2.5" data-open-red-flag-id="${escapeHtmlSafe(f.id)}">
-            <div class="flex flex-wrap items-center justify-between gap-2">
-              <div class="flex flex-wrap items-center gap-1.5">
-                <span class="px-2.5 py-0.5 rounded-full bg-slate-950 border border-slate-700 text-[11px] font-bold text-slate-200">
-                  🕒 ${escapeHtmlSafe(f.formattedTime)}
-                </span>
-                <span class="px-2.5 py-0.5 rounded-full bg-cyan-500/20 border border-cyan-400/60 text-[11px] font-black text-cyan-200" data-flag-device-badge="true">
-                  📱 ${escapeHtmlSafe(f.deviceBadge)}
-                </span>
-                <span class="px-2 py-0.5 rounded-full bg-slate-800 text-[10px] font-bold text-slate-300">
-                  👤 ${escapeHtmlSafe(f.createdBy)}
-                </span>
-                ${f.quickTag ? `<span class="px-2.5 py-0.5 rounded-full bg-amber-400/20 border border-amber-400/70 text-[11px] font-black text-amber-200">🏷️ ${escapeHtmlSafe(f.quickTag)}</span>` : ''}
+          <div class="synapz-live-redflag-card p-3.5 rounded-2xl bg-slate-900/95 border-2 ${isReady ? 'border-emerald-400/85' : isFixed ? 'border-sky-400/60' : isHold ? 'border-amber-400/70' : 'border-rose-400/80'} shadow-lg space-y-2.5" data-open-red-flag-id="${escapeHtmlSafe(f.id)}" data-flag-status="${escapeHtmlSafe(f.status)}">
+            <div class="flex flex-col sm:flex-row items-start gap-3.5">
+              ${thumbHtml}
+              <div class="flex-1 min-w-0 w-full space-y-2">
+                <div class="flex flex-wrap items-center justify-between gap-1.5">
+                  <div class="flex flex-wrap items-center gap-1.5">
+                    <span class="px-2 py-0.5 rounded bg-slate-950 border border-slate-700 font-mono text-[11px] font-black text-rose-300">${escapeHtmlSafe(f.flagCode)}</span>
+                    ${renderStatusBadgeHtml(f)}
+                    <span class="px-2.5 py-0.5 rounded-full bg-indigo-500/20 border border-indigo-400/60 text-[11px] font-black text-indigo-200" data-flag-author-badge="true">
+                      👤 ${escapeHtmlSafe(f.author)}
+                    </span>
+                    <span class="px-2.5 py-0.5 rounded-full bg-cyan-500/20 border border-cyan-400/60 text-[11px] font-black text-cyan-200" data-flag-device-badge="true">
+                      📱 ${escapeHtmlSafe(f.deviceBadge)}
+                    </span>
+                    ${renderIntentGuardrailPillHtml(f)}
+                  </div>
+                  <span class="text-[10px] font-bold text-slate-400">🕒 ${escapeHtmlSafe(f.formattedTime)} • <span class="font-mono">${escapeHtmlSafe(String(f.id).slice(0, 8))}</span></span>
+                </div>
+
+                <div class="flex flex-wrap items-center gap-1.5">
+                  <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-rose-950/70 border border-rose-400/60 text-xs font-black text-rose-200" data-flag-context-pill="true">
+                    📍 ${escapeHtmlSafe(f.contextPill)}
+                  </span>
+                  ${f.domSummary ? `
+                    <code class="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-slate-950 border border-amber-400/60 text-[11px] font-mono font-bold text-amber-200" data-flag-dom-target="true">
+                      🎯 ${escapeHtmlSafe(f.domSummary)} @ (${f.pin.xPct}%, ${f.pin.yPct}%)
+                    </code>
+                  ` : ''}
+                </div>
+
+                <div class="p-2.5 rounded-xl bg-slate-950 border border-slate-800 text-sm font-black text-white leading-snug" data-flag-verbatim-note="true">
+                  “${escapeHtmlSafe(f.verbatimNote)}”
+                </div>
+
+                ${commentsHtml}
+
+                <!-- Inline Co-Founder Reply / Note Box -->
+                <div class="flex flex-wrap sm:flex-nowrap items-center gap-1.5 pt-0.5">
+                  <select data-founder-reply-author="${escapeHtmlSafe(f.id)}" aria-label="Co-Founder Reply Author" class="px-2 py-1.5 rounded-xl bg-slate-950 border border-slate-700 text-[11px] font-black text-cyan-300">
+                    <option value="Coach Dane" ${defaultReplyAuthor === 'Coach Dane' ? 'selected' : ''}>Coach Dane</option>
+                    <option value="Coach Evan" ${defaultReplyAuthor === 'Coach Evan' ? 'selected' : ''}>Coach Evan</option>
+                  </select>
+                  <input type="text" data-founder-reply-input="${escapeHtmlSafe(f.id)}" placeholder="+ Add Co-Founder Note (saves straight to Supabase)..." class="flex-1 min-w-[170px] px-3 py-1.5 rounded-xl bg-slate-950 border border-slate-700 focus:border-cyan-400 text-xs font-bold text-white outline-none" />
+                  <button type="button" data-save-founder-reply="${escapeHtmlSafe(f.id)}" class="px-3 py-1.5 rounded-xl bg-cyan-500 hover:bg-cyan-400 text-slate-950 text-xs font-black shadow cursor-pointer shrink-0">
+                    + Add Note
+                  </button>
+                </div>
+
+                <!-- Card Actions -->
+                <div class="flex flex-wrap items-center justify-end gap-1.5 pt-1 border-t border-slate-800/80">
+                  ${!isReady ? `
+                    <button type="button" data-ready-flag-id="${escapeHtmlSafe(f.id)}" class="px-3 py-1.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-black shadow transition cursor-pointer">
+                      ✅ Mark Ready to Fix
+                    </button>
+                  ` : ''}
+                  ${!isFixed ? `
+                    <button type="button" data-resolve-flag-id="${escapeHtmlSafe(f.id)}" class="btn-resolve-live-flag px-3 py-1.5 rounded-xl bg-sky-500 hover:bg-sky-400 text-slate-950 text-xs font-black shadow transition cursor-pointer">
+                      🏁 Mark Fixed
+                    </button>
+                  ` : ''}
+                  ${!isHold && !isFixed ? `
+                    <button type="button" data-hold-flag-id="${escapeHtmlSafe(f.id)}" class="px-3 py-1.5 rounded-xl bg-amber-500/25 hover:bg-amber-500/35 border border-amber-400/80 text-amber-200 text-xs font-black transition cursor-pointer">
+                      ⏸️ Hold
+                    </button>
+                  ` : ''}
+                  ${(isFixed || isHold || isReady) ? `
+                    <button type="button" data-reopen-flag-id="${escapeHtmlSafe(f.id)}" class="px-3 py-1.5 rounded-xl bg-indigo-500/25 hover:bg-indigo-500/35 border border-indigo-400/80 text-indigo-200 text-xs font-black transition cursor-pointer">
+                      ↩️ Reopen Flag
+                    </button>
+                  ` : ''}
+                  <button type="button" data-delete-flag-id="${escapeHtmlSafe(f.id)}" class="btn-delete-live-flag px-3 py-1.5 rounded-xl bg-rose-950 hover:bg-rose-800 border border-rose-400/70 text-rose-100 text-xs font-black transition cursor-pointer">
+                    🗑️ Delete
+                  </button>
+                </div>
               </div>
-              <span class="text-[10px] font-mono text-slate-400">${escapeHtmlSafe(String(f.id).slice(0, 8))}</span>
-            </div>
-
-            <div class="inline-flex flex-wrap items-center gap-1.5 px-3 py-1 rounded-xl bg-rose-950/70 border border-rose-400/60 text-xs font-black text-rose-200" data-flag-context-pill="true">
-              📍 ${escapeHtmlSafe(f.contextPill)}
-            </div>
-
-            <div class="p-3 rounded-xl bg-slate-950 border border-slate-800 text-sm sm:text-base font-black text-white leading-snug" data-flag-verbatim-note="true">
-              “${escapeHtmlSafe(f.verbatimNote)}”
-            </div>
-
-            <div class="flex flex-wrap items-center justify-end gap-2 pt-1">
-              <button type="button" data-resolve-flag-id="${escapeHtmlSafe(f.id)}" class="btn-resolve-live-flag px-3.5 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 text-xs font-black shadow transition cursor-pointer">
-                ✅ Mark Resolved
-              </button>
-              <button type="button" data-delete-flag-id="${escapeHtmlSafe(f.id)}" class="btn-delete-live-flag px-3.5 py-2 rounded-xl bg-rose-950 hover:bg-rose-800 border border-rose-400/70 text-rose-100 text-xs font-black transition cursor-pointer">
-                🗑️ Delete Flag
-              </button>
             </div>
           </div>
         `;
       }).join('');
 
+      // Bind card events cleanly
+      listEl.querySelectorAll('[data-open-lightbox-flag]').forEach((btn) => {
+        btn.addEventListener('click', () => openRedFlagLightbox(btn.getAttribute('data-open-lightbox-flag')));
+      });
+      listEl.querySelectorAll('[data-ready-flag-id]').forEach((btn) => {
+        btn.addEventListener('click', () => updateLiveRedFlagStatus(btn.getAttribute('data-ready-flag-id'), 'ready_to_fix'));
+      });
       listEl.querySelectorAll('[data-resolve-flag-id]').forEach((btn) => {
-        btn.addEventListener('click', () => {
-          markLiveRedFlagResolved(btn.getAttribute('data-resolve-flag-id'));
-        });
+        btn.addEventListener('click', () => markLiveRedFlagResolved(btn.getAttribute('data-resolve-flag-id')));
+      });
+      listEl.querySelectorAll('[data-hold-flag-id]').forEach((btn) => {
+        btn.addEventListener('click', () => updateLiveRedFlagStatus(btn.getAttribute('data-hold-flag-id'), 'hold_red_flag'));
+      });
+      listEl.querySelectorAll('[data-reopen-flag-id]').forEach((btn) => {
+        btn.addEventListener('click', () => updateLiveRedFlagStatus(btn.getAttribute('data-reopen-flag-id'), 'open_red_flag'));
       });
       listEl.querySelectorAll('[data-delete-flag-id]').forEach((btn) => {
+        btn.addEventListener('click', () => handleTwoTapDeleteFlag(btn, btn.getAttribute('data-delete-flag-id')));
+      });
+      listEl.querySelectorAll('[data-save-founder-reply]').forEach((btn) => {
         btn.addEventListener('click', () => {
-          deleteLiveRedFlag(btn.getAttribute('data-delete-flag-id'));
+          const fid = btn.getAttribute('data-save-founder-reply');
+          const inp = listEl.querySelector(`[data-founder-reply-input="${fid}"]`);
+          const sel = listEl.querySelector(`[data-founder-reply-author="${fid}"]`);
+          if (inp && inp.value.trim()) {
+            addCoFounderNoteToFlag(fid, inp.value.trim(), sel ? sel.value : 'Coach Dane');
+          }
+        });
+      });
+      listEl.querySelectorAll('[data-founder-reply-input]').forEach((inp) => {
+        inp.addEventListener('keydown', (ev) => {
+          if (ev.key === 'Enter') {
+            ev.preventDefault();
+            const fid = inp.getAttribute('data-founder-reply-input');
+            const sel = listEl.querySelector(`[data-founder-reply-author="${fid}"]`);
+            if (inp.value.trim()) {
+              addCoFounderNoteToFlag(fid, inp.value.trim(), sel ? sel.value : 'Coach Dane');
+            }
+          }
         });
       });
     }
     window.renderLiveOpenRedFlagsPanel = renderLiveOpenRedFlagsPanel;
+
+    function readTestSinkFlags() {
+      const merged = [];
+      if (Array.isArray(window.__SYNAPZ_TEST_FLAGS__)) {
+        merged.push(...window.__SYNAPZ_TEST_FLAGS__);
+      }
+      if (window.__SYNAPZ_TEST_MODE__ === true) {
+        try {
+          const raw = sessionStorage.getItem('synapz_test_redflag_sink');
+          const parsed = raw ? JSON.parse(raw) : [];
+          if (Array.isArray(parsed)) merged.push(...parsed);
+        } catch (_) {}
+      }
+      return merged;
+    }
+
+    function persistTestSinkFlags(rows) {
+      if (window.__SYNAPZ_TEST_MODE__ !== true) return;
+      const sinkOnly = (rows || []).filter(r => r && r._testModeSink);
+      try {
+        sessionStorage.setItem('synapz_test_redflag_sink', JSON.stringify(sinkOnly));
+      } catch (_) {}
+    }
 
     async function fetchLiveOpenRedFlags({ silent = false } = {}) {
       if (!window.__founderPinUnlocked) return [];
       const syncEl = document.getElementById('liveOpenRedFlagsSyncStatus');
       if (!silent && syncEl) syncEl.textContent = 'Refreshing from Supabase...';
       try {
+        let cloudRows = [];
         const res = await fetch(
-          `${SUPABASE_URL}/rest/v1/pucksense_agent_inbox?select=*&status=in.(open_red_flag,flagged_for_council_review)&order=created_at.desc&limit=100`,
+          `${SUPABASE_URL}/rest/v1/pucksense_agent_inbox?select=*&or=(category.eq.SEAT_0_RED_FLAG,status.in.(open_red_flag,ready_to_fix,hold_red_flag,resolved_red_flag,flagged_for_council_review))&order=created_at.desc&limit=150`,
           {
             method: 'GET',
             cache: 'no-store',
@@ -4314,58 +4720,164 @@
             }
           }
         );
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const data = await res.json();
-        const rows = Array.isArray(data)
-          ? data.filter(r => r && (r.status === 'open_red_flag' || r.status === 'flagged_for_council_review'))
-          : [];
-        window._liveOpenRedFlagsCache = rows;
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data)) cloudRows = data;
+        }
+        const sinkRows = readTestSinkFlags();
+        const byId = new Map();
+        sinkRows.concat(cloudRows).forEach((r) => {
+          if (r && r.id && !byId.has(String(r.id))) {
+            byId.set(String(r.id), r);
+          }
+        });
+        const rows = Array.from(byId.values());
+        window._allRedFlagsCache = rows;
         renderLiveOpenRedFlagsPanel(rows);
         return rows;
       } catch (err) {
         if (syncEl) syncEl.textContent = 'Offline — showing cached flags';
-        renderLiveOpenRedFlagsPanel(window._liveOpenRedFlagsCache || []);
-        return window._liveOpenRedFlagsCache || [];
+        const fallback = readTestSinkFlags().concat(window._allRedFlagsCache || []);
+        window._allRedFlagsCache = fallback;
+        renderLiveOpenRedFlagsPanel(fallback);
+        return fallback;
       }
     }
     window.fetchLiveOpenRedFlags = fetchLiveOpenRedFlags;
 
-    async function markLiveRedFlagResolved(flagId) {
+    async function patchFlagRowInCloudOrSink(flagId, nextStatus, detailsPatchFn) {
       if (!window.__founderPinUnlocked || !flagId) return { ok: false };
-      const existing = (window._liveOpenRedFlagsCache || []).find(r => String(r.id) === String(flagId));
-      const updatedDetails = {
-        ...((existing && existing.details && typeof existing.details === 'object') ? existing.details : {}),
-        resolvedAt: new Date().toISOString(),
-        resolvedFrom: 'report.html'
-      };
+      const existing = (window._allRedFlagsCache || []).find(r => String(r.id) === String(flagId));
+      if (!existing) return { ok: false };
+
+      const baseDetails = (existing.details && typeof existing.details === 'object') ? { ...existing.details } : {};
+      const updatedDetails = typeof detailsPatchFn === 'function' ? detailsPatchFn(baseDetails) : baseDetails;
+      const finalStatus = nextStatus || existing.status || 'open_red_flag';
+
+      if (existing._testModeSink || (window.__SYNAPZ_TEST_MODE__ === true && window.__SYNAPZ_ALLOW_LIVE_SUPABASE_IN_TEST__ !== true)) {
+        existing.status = finalStatus;
+        existing.details = updatedDetails;
+        persistTestSinkFlags(window._allRedFlagsCache);
+        renderLiveOpenRedFlagsPanel(window._allRedFlagsCache);
+        return { ok: true, id: flagId, status: finalStatus };
+      }
+
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/pucksense_agent_inbox?id=eq.${encodeURIComponent(flagId)}`, {
+        method: 'PATCH',
+        headers: SUPABASE_HEADERS,
+        body: JSON.stringify({ status: finalStatus, details: updatedDetails })
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      existing.status = finalStatus;
+      existing.details = updatedDetails;
+      renderLiveOpenRedFlagsPanel(window._allRedFlagsCache);
+      return { ok: true, id: flagId, status: finalStatus };
+    }
+
+    async function updateLiveRedFlagStatus(flagId, nextStatus) {
       try {
-        const res = await fetch(`${SUPABASE_URL}/rest/v1/pucksense_agent_inbox?id=eq.${encodeURIComponent(flagId)}`, {
-          method: 'PATCH',
-          headers: SUPABASE_HEADERS,
-          body: JSON.stringify({ status: 'resolved_red_flag', details: updatedDetails })
-        });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        window._liveOpenRedFlagsCache = (window._liveOpenRedFlagsCache || []).filter(r => String(r.id) !== String(flagId));
-        renderLiveOpenRedFlagsPanel(window._liveOpenRedFlagsCache);
-        showLiveRedFlagToast(`✅ Marked Red Flag (${String(flagId).slice(0, 8)}) Resolved in Supabase!`);
-        return { ok: true, id: flagId };
+        const res = await patchFlagRowInCloudOrSink(flagId, nextStatus, (d) => ({
+          ...d,
+          lastUpdatedStatusAt: new Date().toISOString(),
+          ...(nextStatus === 'open_red_flag' ? { resolvedInBuild: null } : {})
+        }));
+        if (!res.ok) return res;
+        const labelMap = {
+          ready_to_fix: '✅ Marked Ready to Fix!',
+          hold_red_flag: '⏸️ Moved Flag to Hold!',
+          open_red_flag: '↩️ Reopened Flag to Open Queue!'
+        };
+        showLiveRedFlagToast(`${labelMap[nextStatus] || 'Updated Flag'} (${String(flagId).slice(0, 8)})`);
+        return res;
       } catch (err) {
         showLiveRedFlagToast(`⚠️ Could not update flag: ${err && err.message ? err.message : 'network error'}`);
         return { ok: false };
       }
     }
+    window.updateLiveRedFlagStatus = updateLiveRedFlagStatus;
+
+    async function markLiveRedFlagResolved(flagId, buildLabel = 'v15.6') {
+      try {
+        const res = await patchFlagRowInCloudOrSink(flagId, 'resolved_red_flag', (d) => ({
+          ...d,
+          resolvedAt: new Date().toISOString(),
+          resolvedFrom: 'report.html',
+          resolvedInBuild: buildLabel || 'v15.6'
+        }));
+        if (!res.ok) return res;
+        showLiveRedFlagToast(`🏁 Marked Red Flag (${String(flagId).slice(0, 8)}) Fixed in ${buildLabel || 'v15.6'}!`);
+        return res;
+      } catch (err) {
+        showLiveRedFlagToast(`⚠️ Could not mark fixed: ${err && err.message ? err.message : 'network error'}`);
+        return { ok: false };
+      }
+    }
     window.markLiveRedFlagResolved = markLiveRedFlagResolved;
+
+    async function addCoFounderNoteToFlag(flagId, noteText, replyAuthor = 'Coach Dane') {
+      if (!window.__founderPinUnlocked || !flagId || !noteText) return { ok: false };
+      try {
+        localStorage.setItem('synapz_report_reply_author', replyAuthor);
+      } catch (_) {}
+      try {
+        const res = await patchFlagRowInCloudOrSink(flagId, null, (d) => {
+          const prev = Array.isArray(d.founderComments) ? d.founderComments.slice() : [];
+          prev.push({
+            id: 'note-' + Date.now(),
+            author: replyAuthor || 'Coach Dane',
+            text: String(noteText).trim(),
+            createdAt: new Date().toISOString()
+          });
+          return { ...d, founderComments: prev };
+        });
+        if (!res.ok) return res;
+        showLiveRedFlagToast(`💬 Saved ${replyAuthor}'s Co-Founder note to Flag (${String(flagId).slice(0, 8)})!`);
+        return res;
+      } catch (err) {
+        showLiveRedFlagToast(`⚠️ Could not save note: ${err && err.message ? err.message : 'network error'}`);
+        return { ok: false };
+      }
+    }
+    window.addCoFounderNoteToFlag = addCoFounderNoteToFlag;
+
+    function handleTwoTapDeleteFlag(btnEl, flagId) {
+      if (!btnEl || !flagId) return;
+      if (btnEl.getAttribute('data-delete-armed') === 'true') {
+        clearTimeout(window._armedDeleteTimers[flagId]);
+        deleteLiveRedFlag(flagId);
+        return;
+      }
+      btnEl.setAttribute('data-delete-armed', 'true');
+      btnEl.textContent = '⚠️ Tap Again to Confirm Delete';
+      btnEl.className = 'btn-delete-live-flag px-3 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 border-2 border-yellow-300 text-white text-xs font-black shadow transition cursor-pointer';
+      clearTimeout(window._armedDeleteTimers[flagId]);
+      window._armedDeleteTimers[flagId] = setTimeout(() => {
+        if (btnEl && btnEl.isConnected) {
+          btnEl.removeAttribute('data-delete-armed');
+          btnEl.textContent = '🗑️ Delete';
+          btnEl.className = 'btn-delete-live-flag px-3 py-1.5 rounded-xl bg-rose-950 hover:bg-rose-800 border border-rose-400/70 text-rose-100 text-xs font-black transition cursor-pointer';
+        }
+      }, 4500);
+    }
 
     async function deleteLiveRedFlag(flagId) {
       if (!window.__founderPinUnlocked || !flagId) return { ok: false };
+      const existing = (window._allRedFlagsCache || []).find(r => String(r.id) === String(flagId));
       try {
+        if (existing && (existing._testModeSink || (window.__SYNAPZ_TEST_MODE__ === true && window.__SYNAPZ_ALLOW_LIVE_SUPABASE_IN_TEST__ !== true))) {
+          window._allRedFlagsCache = (window._allRedFlagsCache || []).filter(r => String(r.id) !== String(flagId));
+          persistTestSinkFlags(window._allRedFlagsCache);
+          renderLiveOpenRedFlagsPanel(window._allRedFlagsCache);
+          showLiveRedFlagToast(`🗑️ Deleted Red Flag (${String(flagId).slice(0, 8)})!`);
+          return { ok: true, id: flagId };
+        }
         const res = await fetch(`${SUPABASE_URL}/rest/v1/pucksense_agent_inbox?id=eq.${encodeURIComponent(flagId)}`, {
           method: 'DELETE',
           headers: SUPABASE_HEADERS
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        window._liveOpenRedFlagsCache = (window._liveOpenRedFlagsCache || []).filter(r => String(r.id) !== String(flagId));
-        renderLiveOpenRedFlagsPanel(window._liveOpenRedFlagsCache);
+        window._allRedFlagsCache = (window._allRedFlagsCache || []).filter(r => String(r.id) !== String(flagId));
+        renderLiveOpenRedFlagsPanel(window._allRedFlagsCache);
         showLiveRedFlagToast(`🗑️ Deleted Red Flag (${String(flagId).slice(0, 8)}) from Supabase!`);
         return { ok: true, id: flagId };
       } catch (err) {
@@ -4375,49 +4887,18 @@
     }
     window.deleteLiveRedFlag = deleteLiveRedFlag;
 
-    async function copyAllOpenFlagsForAntigravity() {
-      if (!window.__founderPinUnlocked) return { ok: false };
-      const rows = window._liveOpenRedFlagsCache || [];
-      const structured = rows.map(r => {
-        const f = extractNormalizedFlagFields(r);
-        return {
-          id: f.id,
-          createdAt: f.createdAtIso,
-          device: f.deviceBadge,
-          drillId: f.drillId,
-          drillTitle: f.drillTitle || null,
-          gameMode: f.gameMode || null,
-          positionRole: f.positionRole || null,
-          activeScreen: f.activeScreen,
-          ageTier: f.ageTier || null,
-          quickTag: f.quickTag || null,
-          founderNote: f.verbatimNote
-        };
-      });
-
-      const mdLines = [
-        `# 🚩 SYNAPZ HOCKEY — Open Founder Red Flags (${structured.length})`,
-        ...structured.map((item, idx) =>
-          `${idx + 1}. **[${item.drillId || item.activeScreen}]** (${item.device}${item.gameMode ? ' • ' + item.gameMode : ''}${item.positionRole ? ' • Role: ' + item.positionRole : ''}${item.ageTier ? ' • ' + item.ageTier : ''})${item.quickTag ? ' [' + item.quickTag + ']' : ''}: "${item.founderNote}" _(id: ${item.id})_`
-        ),
-        '',
-        '```json',
-        JSON.stringify(structured, null, 2),
-        '```'
-      ].join('\n');
-
-      window.__lastCopiedOpenRedFlagsReport = mdLines;
+    async function writeTextToClipboardSafe(text) {
       let copiedOk = false;
       try {
         if (navigator.clipboard && typeof navigator.clipboard.writeText === 'function') {
-          await navigator.clipboard.writeText(mdLines);
+          await navigator.clipboard.writeText(text);
           copiedOk = true;
         }
       } catch (_) {}
       if (!copiedOk) {
         try {
           const ta = document.createElement('textarea');
-          ta.value = mdLines;
+          ta.value = text;
           ta.style.position = 'fixed';
           ta.style.opacity = '0';
           document.body.appendChild(ta);
@@ -4426,10 +4907,117 @@
           document.body.removeChild(ta);
         } catch (_) {}
       }
-      showLiveRedFlagToast(`📋 Copied ${structured.length} Open Flag(s) for Antigravity!`);
-      return { ok: true, count: structured.length, text: mdLines };
+      return copiedOk;
     }
-    window.copyAllOpenFlagsForAntigravity = copyAllOpenFlagsForAntigravity;
+
+    function getExportableActiveFlags() {
+      const all = window._allRedFlagsCache || [];
+      const active = all.filter(r => isOpenFlagStatus(r?.status) || r?.status === 'ready_to_fix');
+      return active.map(r => extractNormalizedFlagFields(r));
+    }
+
+    async function copyOpenFlagsForGeminiArchitect() {
+      if (!window.__founderPinUnlocked) return { ok: false };
+      const items = getExportableActiveFlags();
+      const structuredJson = items.map(f => ({
+        flagCode: f.flagCode,
+        id: f.id,
+        status: f.status,
+        author: f.author,
+        device: f.deviceBadge,
+        context: f.contextPill,
+        drillId: f.drillId || null,
+        openModalTitle: f.openModalTitle || null,
+        pinnedDomSelector: f.domSummary || null,
+        pinPct: f.pin,
+        intentGuardrail: f.intentTag,
+        intentLabel: f.intentLabel,
+        note: f.verbatimNote,
+        founderReplies: f.founderComments
+      }));
+
+      const lines = [
+        `# 🚩 SYNAPZ HOCKEY — Gemini Architect Review Packet (${items.length} Open / Ready-to-Fix Flags)`,
+        `- **Workspace:** \`C:\\Users\\Dane\\Documents\\Hockey-IQ-App\\\``,
+        `- **Active Ratchet:** \`qa/LOCKED_MANIFEST.json\` (\`33/33\` SHA-256 locked files — obey 8-Law Studio Constitution; only authorize \`lock_manager.js unlock\` if a flag genuinely requires editing a locked file!)`,
+        ''
+      ];
+
+      items.forEach((f, idx) => {
+        lines.push(`### ${idx + 1}. Flag ${f.flagCode} (${f.status === 'ready_to_fix' ? '✅ READY TO FIX' : '🔴 OPEN'}) — by ${f.author}`);
+        lines.push(`- **UUID:** \`${f.id}\``);
+        lines.push(`- **Device / Build:** ${f.deviceBadge}`);
+        lines.push(`- **Exact Context:** ${f.contextPill}`);
+        lines.push(`- **Intent Guardrail:** **${f.intentLabel}**${f.intentTag === 'keep_style_tweak' ? ' ⚠️ *(DO NOT replace existing art/layout — tweak specified detail ONLY!)*' : ''}`);
+        if (f.domSummary) {
+          lines.push(`- **Pinned DOM Element:** \`${f.domSummary}\` at \`(${f.pin.xPct}%, ${f.pin.yPct}%)\``);
+        } else {
+          lines.push(`- **Screen Pin:** \`(${f.pin.xPct}%, ${f.pin.yPct}%)\``);
+        }
+        lines.push(`- **Note:** "${f.verbatimNote}"`);
+        if (f.founderComments.length) {
+          lines.push(`- **Co-Founder Replies:**`);
+          f.founderComments.forEach(c => lines.push(`  * **${c.author}:** "${c.text}"`));
+        }
+        lines.push('');
+      });
+
+      lines.push('```json');
+      lines.push(JSON.stringify(structuredJson, null, 2));
+      lines.push('```');
+
+      const packet = lines.join('\n');
+      window.__lastCopiedGeminiArchitectPacket = packet;
+      window.__lastCopiedOpenRedFlagsReport = packet;
+      await writeTextToClipboardSafe(packet);
+      showLiveRedFlagToast(`📋 Copied ${items.length} Flag(s) for Gemini Architect Review!`);
+      return { ok: true, count: items.length, text: packet };
+    }
+    window.copyOpenFlagsForGeminiArchitect = copyOpenFlagsForGeminiArchitect;
+    window.copyAllOpenFlagsForAntigravity = copyOpenFlagsForGeminiArchitect;
+
+    async function copySafeQuickFixPromptForAntigravity() {
+      if (!window.__founderPinUnlocked) return { ok: false };
+      const allActive = getExportableActiveFlags();
+      const readyOnly = allActive.filter(f => f.status === 'ready_to_fix');
+      const items = readyOnly.length > 0 ? readyOnly : allActive;
+      const targetIds = items.map(f => f.id);
+
+      const promptLines = [
+        `📍 PASTE INTO A FRESH + CHAT IN ANTIGRAVITY`,
+        `WORKSPACE: C:\\Users\\Dane\\Documents\\Hockey-IQ-App\\`,
+        `ROLE & 8-LAW STUDIO CONSTITUTION MANDATE:`,
+        `1. Run \`node qa/verify_locks.js\` FIRST and confirm all \`33/33\` SHA-256 locked files pass \`0\` violations!`,
+        `2. DO NOT unlock or modify any file in \`qa/LOCKED_MANIFEST.json\` unless explicitly authorized by Coach Dane.`,
+        `3. Fix ONLY the ${items.length} targeted micro-flag(s) below while strictly preserving existing painted 75/25 art, layouts, and Safari-15 (\`iPadOS 15.8.8\`) compatibility:`,
+        ''
+      ];
+
+      items.forEach((f, idx) => {
+        promptLines.push(`FLAG ${idx + 1}: ${f.flagCode} (UUID: \`${f.id}\`)`);
+        promptLines.push(`- Author & Device: ${f.author} (${f.deviceBadge})`);
+        promptLines.push(`- Context: ${f.contextPill}`);
+        promptLines.push(`- Guardrail Tag: ${f.intentLabel}${f.intentTag === 'keep_style_tweak' ? ' — STRICTLY KEEP EXISTING ART & LAYOUT; ONLY TWEAK THIS DETAIL!' : ''}`);
+        promptLines.push(`- Pinned Target: ${f.domSummary ? f.domSummary : 'Screen Pin'} @ (${f.pin.xPct}%, ${f.pin.yPct}%)`);
+        promptLines.push(`- Instruction: "${f.verbatimNote}"`);
+        if (f.founderComments.length) {
+          promptLines.push(`- Co-Founder Notes: ${f.founderComments.map(c => c.author + ': "' + c.text + '"').join(' | ')}`);
+        }
+        promptLines.push('');
+      });
+
+      promptLines.push(`VERIFICATION, AUTO-RESOLVE & LIVE DEPLOY:`);
+      promptLines.push(`1. Run \`node qa/verify_locks.js\`, \`node qa/verify_v15_3_ipad15_and_coach_audit.spec.js\`, and \`node qa/adversarial_qa_agent.js --smoke\` (\`window.__SYNAPZ_TEST_MODE__ = true\`).`);
+      promptLines.push(`2. Deploy ONLY to \`synapz-hockey\` via \`node deploy-github-pages.js\` (keep \`tactix-hockey\` Frozen Safe Backup Vault untouched).`);
+      promptLines.push(`3. Upon verified live deploy, PATCH these exact Flag UUIDs in \`public.pucksense_agent_inbox\` to \`status: "resolved_red_flag"\` with \`details.resolvedInBuild\` set to the new build version: ${JSON.stringify(targetIds)}.`);
+
+      const text = promptLines.join('\n');
+      window.__lastCopiedQuickFixPrompt = text;
+      await writeTextToClipboardSafe(text);
+      showLiveRedFlagToast(`⚡ Copied Safe Quick-Fix Prompt (${items.length} Flag${items.length === 1 ? '' : 's'}) for Antigravity!`);
+      return { ok: true, count: items.length, text };
+    }
+    window.copySafeQuickFixPromptForAntigravity = copySafeQuickFixPromptForAntigravity;
 
     function startLiveRedFlagPolling() {
       if (window._liveRedFlagsPollTimer) clearInterval(window._liveRedFlagsPollTimer);
@@ -4456,14 +5044,60 @@
       renderReportFounderDigestTable();
 
       const btnRefreshFlags = document.getElementById('btnRefreshLiveRedFlags');
-      if (btnRefreshFlags && !btnRefreshFlags._v142Wired) {
-        btnRefreshFlags._v142Wired = true;
+      if (btnRefreshFlags && !btnRefreshFlags._v156Wired) {
+        btnRefreshFlags._v156Wired = true;
         btnRefreshFlags.addEventListener('click', () => fetchLiveOpenRedFlags({ silent: false }));
       }
-      const btnCopyFlags = document.getElementById('btnCopyAllOpenFlagsForAntigravity');
-      if (btnCopyFlags && !btnCopyFlags._v142Wired) {
-        btnCopyFlags._v142Wired = true;
-        btnCopyFlags.addEventListener('click', () => copyAllOpenFlagsForAntigravity());
+      const btnCopyArchitect = document.getElementById('btnCopyFlagsForGeminiArchitect');
+      if (btnCopyArchitect && !btnCopyArchitect._v156Wired) {
+        btnCopyArchitect._v156Wired = true;
+        btnCopyArchitect.addEventListener('click', () => copyOpenFlagsForGeminiArchitect());
+      }
+      const btnCopyQuickFix = document.getElementById('btnCopySafeQuickFixPrompt');
+      if (btnCopyQuickFix && !btnCopyQuickFix._v156Wired) {
+        btnCopyQuickFix._v156Wired = true;
+        btnCopyQuickFix.addEventListener('click', () => copySafeQuickFixPromptForAntigravity());
+      }
+      const btnCopyLegacy = document.getElementById('btnCopyAllOpenFlagsForAntigravity');
+      if (btnCopyLegacy && !btnCopyLegacy._v156Wired) {
+        btnCopyLegacy._v156Wired = true;
+        btnCopyLegacy.addEventListener('click', () => copyOpenFlagsForGeminiArchitect());
+      }
+
+      document.querySelectorAll('#redFlagStatusFilterBar [data-flag-status-filter]').forEach((btn) => {
+        if (btn._v156Wired) return;
+        btn._v156Wired = true;
+        btn.addEventListener('click', () => {
+          window._redFlagStatusFilter = btn.getAttribute('data-flag-status-filter') || 'open';
+          renderLiveOpenRedFlagsPanel(window._allRedFlagsCache);
+        });
+      });
+
+      document.querySelectorAll('#redFlagAuthorFilterBar [data-flag-author-filter]').forEach((btn) => {
+        if (btn._v156Wired) return;
+        btn._v156Wired = true;
+        btn.addEventListener('click', () => {
+          window._redFlagAuthorFilter = btn.getAttribute('data-flag-author-filter') || 'All';
+          renderLiveOpenRedFlagsPanel(window._allRedFlagsCache);
+        });
+      });
+
+      const lbModal = document.getElementById('redFlagLightboxModal');
+      const lbClose = document.getElementById('btnCloseRedFlagLightbox');
+      if (lbClose && !lbClose._v156Wired) {
+        lbClose._v156Wired = true;
+        lbClose.addEventListener('click', closeRedFlagLightbox);
+      }
+      if (lbModal && !lbModal._v156Wired) {
+        lbModal._v156Wired = true;
+        lbModal.addEventListener('click', (ev) => {
+          if (ev.target === lbModal) closeRedFlagLightbox();
+        });
+        window.addEventListener('keydown', (ev) => {
+          if (ev.key === 'Escape' && !lbModal.classList.contains('hidden')) {
+            closeRedFlagLightbox();
+          }
+        });
       }
 
       await fetchLiveOpenRedFlags({ silent: false });
@@ -4618,7 +5252,9 @@
       function lockFounderBoardNow() {
         window.__founderPinUnlocked = false;
         stopLiveRedFlagPolling();
+        window._allRedFlagsCache = [];
         window._liveOpenRedFlagsCache = [];
+        if (typeof closeRedFlagLightbox === 'function') closeRedFlagLightbox();
         document.body.classList.add('founder-pin-locked');
         try {
           localStorage.removeItem(FOUNDER_AUTH_STORAGE_KEY);
@@ -4773,7 +5409,7 @@
   <div id="founderBatchDeployBar" class="fixed bottom-0 inset-x-0 z-40 bg-slate-950/95 backdrop-blur-md border-t-2 border-emerald-400 px-2.5 py-2.5 shadow-2xl">
     <div class="synapz-mobile-container !p-0 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
       <div class="flex flex-wrap items-center gap-1.5 text-[11px] sm:text-xs font-bold text-slate-100">
-        <span class="px-2 py-0.5 rounded bg-amber-400/20 border border-amber-400/60 text-amber-300 text-[10px] font-black uppercase">🏆 v14.3 • 100% White-Ice Cutover • 45/45 Drills • 9 Modes • 378 Live</span>
+        <span class="px-2 py-0.5 rounded bg-amber-400/20 border border-amber-400/60 text-amber-300 text-[10px] font-black uppercase">🏆 v15.6 • 33/33 SHA-256 Locks • Visual Red-Flag Command Center • 45/45 Drills</span>
         <span id="founderBatchCartCountsText">📥 <span class="text-emerald-300 font-black">0</span> To Review &nbsp;•&nbsp; 🛠️ <span class="text-amber-300 font-black">0</span> Queued &nbsp;•&nbsp; ✅ <span class="text-cyan-300 font-black">378</span> Live</span>
       </div>
       <button id="btnTriggerRemoteBatchDeploy" type="button" onclick="window.runCloudBatchDeployAndNextAuditFromPhone && window.runCloudBatchDeployAndNextAuditFromPhone()" class="w-full sm:w-auto min-h-[44px] px-3.5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-400 via-amber-400 to-emerald-400 hover:from-emerald-300 hover:to-amber-300 text-slate-950 font-black text-xs shadow-xl transition">
