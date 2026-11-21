@@ -1,23 +1,32 @@
 /**
- * SYNAPZ HOCKEY v15.1 — Real Zoomable/Pannable US & Canada 32-City NHL Atlas Map
- * (`engine/nhl_atlas_map.js`)
+ * SYNAPZ HOCKEY v15.5 — Authentic 75/25 Illustrated North America (US + Canada)
+ * 32-City Head-to-Head NHL Atlas Map & Friend Scouting Profile Cards (`engine/nhl_atlas_map.js`)
  *
- * Replaces the legacy blue gradient circle with a true Albers Conic Projected
- * North America Geographic Vector Atlas:
- *   - Accurate US & Canada coastlines, all 5 Great Lakes, US state borders,
- *     and Canadian province borders in a championship dark-slate & ice-blue theme.
- *   - All 32 NHL cities plotted at true projected geographic coordinates (`SEA..FLA`)
- *     with subtle tour route lines.
- *   - Smooth 1.0x–4.0x Zoom (`+ / − / Reset` + mouse wheel + touch pinch) & Drag-Pan
- *     with counter-scaled city pins & dynamic zero-overlap label placement so dense
- *     East Coast / Metro clusters (`NYR, NYI, NJD, PHI, BOS, MTL, TOR, OTT, BUF`)
- *     separate cleanly with zero overlapping text.
- *   - Opens to a 100% unobstructed map (`0` auto-popped friend cards), plots `You • #[Number]`
- *     + strictly real accepted friends only, and opens a floating detail popover
- *     with live 360° Skater preview on tap.
+ * Replaces the simplified straight-line polygon map with:
+ *   - High-resolution 75%-realistic / 25%-stylized Championship Sports Atlas illustration
+ *     of North America (`assets/maps/north_america_75_25.png`, 16:9, zero baked-in text).
+ *   - All 32 NHL cities (`SJS..FLA`) precisely calibrated onto their true coastal/inland
+ *     locations on the illustrated map with smooth `1.0x–4.0x` zoom & drag-pan.
+ *   - Head-to-Head Friend Race Pins + 1-Tap `👀 Preview Sample Teammates` toggle
+ *     (keeping brand-new profiles strictly at `0` connected friends by default per Law 8).
+ *   - Clickable **Player Scouting Card** modal (`openFriendScoutingCardModal`) shared
+ *     between the 32-City Map and Friends & Family Wall, showcasing the teammate's
+ *     custom painted 75/25 avatar + equipped Pro Shop gear list + Hockey IQ +
+ *     Age Band / Position + City Stop (`City X of 32`) + 5-Zone Tactical Skill Metrics!
  */
 
-import { renderCustomizableSkater } from './skater_renderer_360.js';
+import { renderCustomizableSkater, normalizeSkaterState } from './skater_renderer_360.js';
+import { renderGearItemArtSvg, STARTER_JERSEY_SWATCHES } from './gear_art_75_25.js';
+
+export const PAINTED_NORTH_AMERICA_MAP_URL = 'assets/maps/north_america_75_25.png';
+
+// Eagerly preload the illustrated North America map in browser environments
+let _preloadedMapImg = null;
+if (typeof window !== 'undefined' && typeof Image !== 'undefined') {
+  _preloadedMapImg = new Image();
+  _preloadedMapImg.decoding = 'async';
+  _preloadedMapImg.src = PAINTED_NORTH_AMERICA_MAP_URL;
+}
 
 function escMap(str) {
   return String(str ?? '')
@@ -27,241 +36,344 @@ function escMap(str) {
     .replace(/"/g, '&quot;');
 }
 
-/**
- * True Albers Equal-Area Conic Projection for US & Southern/Central Canada
- * mapped cleanly into a `1000 x 560` SVG coordinate space.
- */
-const DEG2RAD = Math.PI / 180;
-const PHI1 = 29.5 * DEG2RAD;
-const PHI2 = 45.5 * DEG2RAD;
-const PHI0 = 40.5 * DEG2RAD;
-const LAMBDA0 = -96.0 * DEG2RAD;
-const N_CONE = 0.5 * (Math.sin(PHI1) + Math.sin(PHI2));
-const C_CONE = Math.cos(PHI1) * Math.cos(PHI1) + 2 * N_CONE * Math.sin(PHI1);
-const RHO0 = Math.sqrt(C_CONE - 2 * N_CONE * Math.sin(PHI0)) / N_CONE;
-const PROJ_SCALE = 1160;
-const PROJ_CX = 495;
-const PROJ_CY = 312;
-
+// Compatibility projection helper kept for external callers
 export function projectNorthAmericaLatLon(lat, lon) {
+  const DEG2RAD = Math.PI / 180;
+  const PHI1 = 29.5 * DEG2RAD;
+  const PHI2 = 45.5 * DEG2RAD;
+  const PHI0 = 40.5 * DEG2RAD;
+  const LAMBDA0 = -96.0 * DEG2RAD;
+  const N_CONE = 0.5 * (Math.sin(PHI1) + Math.sin(PHI2));
+  const C_CONE = Math.cos(PHI1) * Math.cos(PHI1) + 2 * N_CONE * Math.sin(PHI1);
+  const RHO0 = Math.sqrt(C_CONE - 2 * N_CONE * Math.sin(PHI0)) / N_CONE;
   const phi = Number(lat) * DEG2RAD;
   const lam = Number(lon) * DEG2RAD;
   const theta = N_CONE * (lam - LAMBDA0);
   const rho = Math.sqrt(Math.max(0.0001, C_CONE - 2 * N_CONE * Math.sin(phi))) / N_CONE;
-  const x = PROJ_CX + PROJ_SCALE * rho * Math.sin(theta);
-  const y = PROJ_CY - PROJ_SCALE * (RHO0 - rho * Math.cos(theta));
+  const x = 495 + 1160 * rho * Math.sin(theta);
+  const y = 312 - 1160 * (RHO0 - rho * Math.cos(theta));
   return [Math.round(x * 10) / 10, Math.round(y * 10) / 10];
 }
 
-function polyPathFromLatLon(coords, close = true) {
-  if (!Array.isArray(coords) || coords.length === 0) return '';
-  const pts = coords.map(([lat, lon]) => projectNorthAmericaLatLon(lat, lon));
-  return pts.map((p, idx) => `${idx === 0 ? 'M' : 'L'} ${p[0]} ${p[1]}`).join(' ') + (close ? ' Z' : '');
+// ============================================================================
+// ALL 32 OFFICIAL NHL CITIES CALIBRATED ONTO `assets/maps/north_america_75_25.png` (1000x562)
+// ============================================================================
+const CALIBRATED_32_NHL_CITIES = [
+  { code: 'SJS', id: 'sanjose',      name: 'San Jose',      team: 'Sharks',                region: 'CA', lat: 37.33, lon: -121.90, x: 173, y: 324, focus: 'Puck Support & Basics' },
+  { code: 'ANA', id: 'anaheim',      name: 'Anaheim',       team: 'Ducks',                 region: 'CA', lat: 33.81, lon: -117.88, x: 211, y: 394, focus: '2-on-1 Support Lanes' },
+  { code: 'LAK', id: 'losangeles',   name: 'Los Angeles',   team: 'Kings',                 region: 'CA', lat: 34.04, lon: -118.27, x: 203, y: 385, focus: 'O-Zone Triangle Spacing' },
+  { code: 'SEA', id: 'seattle',      name: 'Seattle',       team: 'Kraken',                region: 'WA', lat: 47.62, lon: -122.35, x: 204, y: 158, focus: 'High-Slot Coverage' },
+  { code: 'VAN', id: 'vancouver',    name: 'Vancouver',     team: 'Canucks',               region: 'BC', lat: 49.28, lon: -123.11, x: 206, y: 132, focus: 'Protecting the House' },
+  { code: 'CGY', id: 'calgary',      name: 'Calgary',       team: 'Flames',                region: 'AB', lat: 51.04, lon: -114.05, x: 310, y: 128, focus: 'Net-Front Box-Out' },
+  { code: 'EDM', id: 'edmonton',     name: 'Edmonton',      team: 'Oilers',                region: 'AB', lat: 53.55, lon: -113.49, x: 318, y: 88,  focus: 'Controlled Breakouts' },
+  { code: 'VGK', id: 'vegas',        name: 'Las Vegas',     team: 'Golden Knights',        region: 'NV', lat: 36.10, lon: -115.18, x: 246, y: 362, focus: 'D-to-D Reverse Outlets' },
+  { code: 'UTA', id: 'utah',         name: 'Salt Lake',     team: 'Utah HC',               region: 'UT', lat: 40.77, lon: -111.90, x: 298, y: 288, focus: 'Center Low-and-Slow Curl' },
+  { code: 'COL', id: 'denver',       name: 'Denver',        team: 'Avalanche',             region: 'CO', lat: 39.75, lon: -105.01, x: 374, y: 322, focus: 'Speed Regroup Entries' },
+  { code: 'DAL', id: 'dallas',       name: 'Dallas',        team: 'Stars',                 region: 'TX', lat: 32.79, lon: -96.81,  x: 478, y: 424, focus: 'Odd-Man Rush Width' },
+  { code: 'WPG', id: 'winnipeg',     name: 'Winnipeg',      team: 'Jets',                  region: 'MB', lat: 49.89, lon: -97.14,  x: 492, y: 150, focus: 'Middle-Lane Drive' },
+  { code: 'MIN', id: 'stpaul',       name: 'St. Paul',      team: 'Wild',                  region: 'MN', lat: 44.94, lon: -93.10,  x: 542, y: 236, focus: 'F3 High-Slot Trailer' },
+  { code: 'STL', id: 'stlouis',      name: 'St. Louis',     team: 'Blues',                 region: 'MO', lat: 38.63, lon: -90.20,  x: 568, y: 342, focus: 'Blue-Line Gap Surfing' },
+  { code: 'CHI', id: 'chicago',      name: 'Chicago',       team: 'Blackhawks',            region: 'IL', lat: 41.88, lon: -87.67,  x: 598, y: 279, focus: 'Cycle & Cutback Shielding' },
+  { code: 'NSH', id: 'nashville',    name: 'Nashville',     team: 'Predators',             region: 'TN', lat: 36.16, lon: -86.78,  x: 626, y: 378, focus: 'Stick-on-Puck Angling' },
+  { code: 'DET', id: 'detroit',      name: 'Detroit',       team: 'Red Wings',             region: 'MI', lat: 42.34, lon: -83.05,  x: 656, y: 267, focus: '2-1-2 Forecheck Pinch' },
+  { code: 'CBJ', id: 'columbus',     name: 'Columbus',      team: 'Blue Jackets',          region: 'OH', lat: 39.97, lon: -83.01,  x: 668, y: 310, focus: 'Royal-Road Seam Denial' },
+  { code: 'TOR', id: 'toronto',      name: 'Toronto',       team: 'Maple Leafs',           region: 'ON', lat: 43.64, lon: -79.38,  x: 704, y: 241, focus: 'High-Tempo Two-Touch' },
+  { code: 'OTT', id: 'ottawa',       name: 'Ottawa',        team: 'Senators',              region: 'ON', lat: 45.30, lon: -75.93,  x: 742, y: 207, focus: 'Neutral Zone Hinge' },
+  { code: 'MTL', id: 'montreal',     name: 'Montreal',      team: 'Canadiens',             region: 'QC', lat: 45.50, lon: -73.57,  x: 766, y: 198, focus: 'Backcheck Gut Track' },
+  { code: 'BOS', id: 'boston',       name: 'Boston',        team: 'Bruins',                region: 'MA', lat: 42.37, lon: -71.06,  x: 804, y: 238, focus: 'Board-Seal Breakouts' },
+  { code: 'BUF', id: 'buffalo',      name: 'Buffalo',       team: 'Sabres',                region: 'NY', lat: 42.87, lon: -78.88,  x: 713, y: 261, focus: 'Shoulder-Check Scanning' },
+  { code: 'NYR', id: 'nyrangers',    name: 'New York',      team: 'Rangers',               region: 'NY', lat: 40.75, lon: -73.99,  x: 775, y: 269, focus: 'Quick-Up Transition' },
+  { code: 'NYI', id: 'nyislanders',  name: 'Long Island',   team: 'Islanders',             region: 'NY', lat: 40.72, lon: -73.52,  x: 787, y: 269, focus: 'Structured Low House' },
+  { code: 'NJD', id: 'newjersey',    name: 'New Jersey',    team: 'Devils',                region: 'NJ', lat: 40.73, lon: -74.19,  x: 769, y: 274, focus: 'Speed Entry & Delay' },
+  { code: 'PHI', id: 'philadelphia', name: 'Philadelphia',  team: 'Flyers',                region: 'PA', lat: 39.90, lon: -75.17,  x: 758, y: 289, focus: 'Strong-Wall Rim Seal' },
+  { code: 'PIT', id: 'pittsburgh',   name: 'Pittsburgh',    team: 'Penguins',              region: 'PA', lat: 40.44, lon: -79.99,  x: 706, y: 295, focus: 'Give-and-Go Scissors' },
+  { code: 'WSH', id: 'washington',   name: 'Washington',    team: 'Capitals',              region: 'DC', lat: 38.90, lon: -77.02,  x: 741, y: 314, focus: '5-on-4 Umbrella One-Timer' },
+  { code: 'CAR', id: 'carolina',     name: 'Raleigh',       team: 'Hurricanes',            region: 'NC', lat: 35.80, lon: -78.72,  x: 734, y: 364, focus: 'Aggressive Point Pinch' },
+  { code: 'TBL', id: 'tampabay',     name: 'Tampa Bay',     team: 'Lightning',             region: 'FL', lat: 27.94, lon: -82.45,  x: 706, y: 502, focus: '4-on-5 Diamond PK' },
+  { code: 'FLA', id: 'florida',      name: 'Florida',       team: 'Panthers • Cup Final',  region: 'FL', lat: 26.16, lon: -80.33,  x: 733, y: 526, focus: 'Championship All-Zone IQ' }
+];
+
+export const NHL_ATLAS_CITIES = CALIBRATED_32_NHL_CITIES.map((c, stopIdx) => ({
+  ...c,
+  stopIndex: stopIdx,
+  stopNumber: stopIdx + 1
+}));
+
+// ============================================================================
+// OPTIONAL SAMPLE TEAMMATES (Shown ONLY When `👀 Preview Sample Teammates` Is Toggled ON!)
+// Brand-new profiles stay strictly at `0` connected friends by default (Studio Law 8).
+// ============================================================================
+export const SAMPLE_TEAMMATES_ROSTER = Object.freeze([
+  {
+    friendCode: 'MAYA19',
+    name: 'Maya',
+    jerseyNumber: '19',
+    divisionLabel: '12U AA',
+    positionCode: 'RW',
+    stockAvatarId: 'avatar-female-2',
+    hairStyle: 'braids',
+    hairColor: '#111827',
+    jerseyColor: '#ec4899',
+    equippedStickId: 'stick-carbon-pulse',
+    equippedGlovesId: 'gloves-blackout-pro',
+    equippedVisorId: 'visor-gold',
+    equippedSkatesId: 'skate-ridgecore-dlc',
+    equippedSkates: 'skate-ridgecore-dlc',
+    iqScore: 168,
+    cityStopIdx: 18, // Stop 19 of 32: Toronto (TOR)
+    cityName: 'Toronto',
+    isSamplePreview: true,
+    zoneMetrics: { dz: 88, nz: 92, om: 95, oz: 89, st: 82 },
+    milestones: ['Reached Stop #19 Toronto (TOR)', '95% Odd-Man Rush Mastery']
+  },
+  {
+    friendCode: 'GUGG38',
+    name: 'Gugger',
+    jerseyNumber: '38',
+    divisionLabel: '14U AAA',
+    positionCode: 'LD',
+    stockAvatarId: 'avatar-male-1',
+    hairStyle: 'flow',
+    hairColor: '#facc15',
+    jerseyColor: '#0284c7',
+    equippedStickId: 'stick-cyan',
+    equippedGlovesId: 'gloves-gold',
+    equippedVisorId: 'visor-tint',
+    equippedSkatesId: 'skate-gold',
+    equippedSkates: 'skate-gold',
+    iqScore: 185,
+    cityStopIdx: 12, // Stop 13 of 32: St. Paul (MIN)
+    cityName: 'St. Paul',
+    isSamplePreview: true,
+    zoneMetrics: { dz: 94, nz: 90, om: 87, oz: 91, st: 89 },
+    milestones: ['Reached Stop #13 St. Paul (MIN)', 'Unlocked 24K All-Star Mitts']
+  },
+  {
+    friendCode: 'RHET88',
+    name: 'Rhett',
+    jerseyNumber: '88',
+    divisionLabel: '12U A',
+    positionCode: 'C',
+    stockAvatarId: 'avatar-male-3',
+    hairStyle: 'mohawk',
+    hairColor: '#06b6d4',
+    jerseyColor: '#7c3aed',
+    equippedStickId: 'stick-gold',
+    equippedGlovesId: 'gloves-cyan',
+    equippedVisorId: 'visor-blue',
+    equippedSkatesId: 'skate-blue',
+    equippedSkates: 'skate-blue',
+    iqScore: 142,
+    cityStopIdx: 13, // Stop 14 of 32: St. Louis (STL)
+    cityName: 'St. Louis',
+    isSamplePreview: true,
+    zoneMetrics: { dz: 84, nz: 78, om: 91, oz: 86, st: 74 },
+    milestones: ['Reached Stop #14 St. Louis (STL)', '5-Play Gold Shift Streak']
+  }
+]);
+
+export function isSampleTeammatesPreviewEnabled() {
+  return Boolean(typeof window !== 'undefined' && window.state && window.state.previewSampleTeammates === true);
 }
 
-// ============================================================================
-// CANADIAN PROVINCES (Real Geographic Lat/Lon Boundaries)
-// ============================================================================
-const CANADA_PROVINCE_POLYGONS = [
-  {
-    code: 'BC',
-    name: 'British Columbia',
-    coords: [
-      [49.0, -123.2], [49.8, -124.8], [51.2, -127.8], [54.3, -130.4],
-      [56.5, -131.2], [58.5, -133.5], [60.0, -139.0], [60.0, -120.0],
-      [54.0, -120.0], [52.8, -118.4], [51.0, -116.0], [49.0, -114.1], [49.0, -123.2]
-    ]
-  },
-  {
-    code: 'BC-VI',
-    name: 'Vancouver Island',
-    coords: [
-      [48.35, -123.5], [48.6, -124.7], [49.7, -126.8], [50.7, -128.3],
-      [50.4, -126.4], [49.2, -123.9], [48.35, -123.5]
-    ]
-  },
-  {
-    code: 'AB',
-    name: 'Alberta',
-    coords: [
-      [49.0, -114.1], [51.0, -116.0], [52.8, -118.4], [54.0, -120.0],
-      [60.0, -120.0], [60.0, -110.0], [49.0, -110.0], [49.0, -114.1]
-    ]
-  },
-  {
-    code: 'SK',
-    name: 'Saskatchewan',
-    coords: [
-      [49.0, -110.0], [60.0, -110.0], [60.0, -101.9], [49.0, -101.4], [49.0, -110.0]
-    ]
-  },
-  {
-    code: 'MB',
-    name: 'Manitoba',
-    coords: [
-      [49.0, -101.4], [60.0, -101.9], [60.0, -94.8], [58.8, -94.1],
-      [57.0, -92.4], [56.8, -89.0], [52.8, -95.1], [49.0, -95.2], [49.0, -101.4]
-    ]
-  },
-  {
-    code: 'ON',
-    name: 'Ontario',
-    coords: [
-      [49.0, -95.2], [52.8, -95.1], [56.8, -89.0], [55.2, -82.3],
-      [51.3, -79.6], [47.5, -79.5], [46.3, -78.8], [45.5, -76.4],
-      [45.0, -74.7], [44.1, -76.5], [43.6, -79.4], [42.9, -79.0],
-      [42.0, -82.6], [42.3, -83.1], [43.0, -82.4], [45.9, -83.5],
-      [46.5, -84.4], [48.0, -89.5], [48.6, -93.8], [49.0, -95.2]
-    ]
-  },
-  {
-    code: 'QC',
-    name: 'Quebec',
-    coords: [
-      [45.0, -74.7], [45.5, -76.4], [46.3, -78.8], [47.5, -79.5],
-      [51.3, -79.6], [54.8, -79.2], [56.8, -76.5], [58.5, -68.0],
-      [52.0, -65.5], [50.2, -61.5], [49.2, -65.0], [48.8, -64.3],
-      [47.9, -66.2], [47.3, -69.2], [46.8, -71.2], [45.0, -71.5], [45.0, -74.7]
-    ]
-  },
-  {
-    code: 'NB',
-    name: 'New Brunswick',
-    coords: [
-      [45.1, -67.1], [47.3, -69.2], [47.9, -66.2], [47.8, -64.5],
-      [46.0, -64.1], [45.2, -66.0], [45.1, -67.1]
-    ]
-  },
-  {
-    code: 'NS',
-    name: 'Nova Scotia',
-    coords: [
-      [43.5, -65.6], [44.6, -66.1], [45.8, -64.2], [46.9, -60.4],
-      [45.6, -60.8], [44.6, -63.5], [43.5, -65.6]
-    ]
-  },
-  {
-    code: 'PEI',
-    name: 'Prince Edward Island',
-    coords: [
-      [46.0, -64.0], [47.0, -64.0], [46.5, -62.0], [46.0, -62.6], [46.0, -64.0]
-    ]
+export function getEffectiveClubhouseFriends(profile = {}) {
+  const realAccepted = Array.isArray(profile?.acceptedFriends)
+    ? profile.acceptedFriends.filter((f) => f && f.friendCode && !['RHET88', 'MAYA19', 'SK8R24', 'GUGG38'].includes(f.friendCode))
+    : [];
+  if (isSampleTeammatesPreviewEnabled()) {
+    return [...realAccepted, ...SAMPLE_TEAMMATES_ROSTER.map((t) => ({ ...t }))];
   }
-];
+  return realAccepted;
+}
 
-// ============================================================================
-// UNITED STATES (Contiguous State Boundaries in Real Geographic Lat/Lon)
-// ============================================================================
-const US_STATE_POLYGONS = [
-  { code: 'WA', coords: [[49.0, -123.2], [49.0, -117.0], [46.0, -117.0], [45.6, -121.2], [46.25, -124.0], [48.4, -124.7], [48.2, -122.7], [49.0, -123.2]] },
-  { code: 'OR', coords: [[46.25, -124.0], [45.6, -121.2], [46.0, -117.0], [42.0, -117.0], [42.0, -124.2], [44.6, -124.1], [46.25, -124.0]] },
-  { code: 'CA', coords: [[42.0, -124.2], [42.0, -120.0], [39.0, -120.0], [35.0, -114.6], [32.7, -114.7], [32.55, -117.1], [33.8, -118.4], [34.45, -120.5], [36.6, -121.9], [37.8, -122.5], [40.4, -124.4], [42.0, -124.2]] },
-  { code: 'ID', coords: [[49.0, -117.0], [49.0, -116.05], [47.7, -115.7], [45.6, -113.9], [44.5, -111.05], [42.0, -111.05], [42.0, -117.0], [46.0, -117.0], [49.0, -117.0]] },
-  { code: 'NV', coords: [[42.0, -120.0], [42.0, -114.05], [37.0, -114.05], [35.0, -114.6], [39.0, -120.0], [42.0, -120.0]] },
-  { code: 'MT', coords: [[49.0, -116.05], [49.0, -104.05], [45.0, -104.05], [45.0, -111.05], [44.5, -111.05], [45.6, -113.9], [47.7, -115.7], [49.0, -116.05]] },
-  { code: 'WY', coords: [[45.0, -111.05], [45.0, -104.05], [41.0, -104.05], [41.0, -111.05], [45.0, -111.05]] },
-  { code: 'UT', coords: [[42.0, -114.05], [42.0, -111.05], [41.0, -111.05], [41.0, -109.05], [37.0, -109.05], [37.0, -114.05], [42.0, -114.05]] },
-  { code: 'AZ', coords: [[37.0, -114.05], [37.0, -109.05], [31.33, -109.05], [31.33, -111.1], [32.5, -114.8], [35.0, -114.6], [37.0, -114.05]] },
-  { code: 'CO', coords: [[41.0, -109.05], [41.0, -102.05], [37.0, -102.05], [37.0, -109.05], [41.0, -109.05]] },
-  { code: 'NM', coords: [[37.0, -109.05], [37.0, -103.0], [32.0, -103.0], [32.0, -106.6], [31.33, -109.05], [37.0, -109.05]] },
-  { code: 'ND', coords: [[49.0, -104.05], [49.0, -97.2], [45.94, -96.55], [45.94, -104.05], [49.0, -104.05]] },
-  { code: 'SD', coords: [[45.94, -104.05], [45.94, -96.55], [42.5, -96.45], [43.0, -104.05], [45.94, -104.05]] },
-  { code: 'NE', coords: [[43.0, -104.05], [42.5, -96.45], [40.0, -95.3], [40.0, -102.05], [41.0, -102.05], [41.0, -104.05], [43.0, -104.05]] },
-  { code: 'KS', coords: [[40.0, -102.05], [40.0, -95.3], [39.1, -94.6], [37.0, -94.6], [37.0, -102.05], [40.0, -102.05]] },
-  { code: 'OK', coords: [[37.0, -103.0], [37.0, -94.6], [33.9, -94.5], [33.8, -96.6], [34.5, -100.0], [36.5, -100.0], [36.5, -103.0], [37.0, -103.0]] },
-  { code: 'TX', coords: [[36.5, -103.0], [36.5, -100.0], [34.5, -100.0], [33.8, -96.6], [33.9, -94.5], [31.2, -93.6], [29.7, -93.8], [28.4, -96.4], [26.0, -97.15], [27.5, -99.5], [29.8, -101.4], [29.0, -103.1], [31.8, -106.5], [32.0, -103.0], [36.5, -103.0]] },
-  { code: 'MN', coords: [[49.0, -97.2], [49.0, -95.15], [48.0, -89.6], [46.8, -92.1], [44.5, -92.1], [43.5, -91.2], [43.5, -96.45], [45.94, -96.55], [49.0, -97.2]] },
-  { code: 'IA', coords: [[43.5, -96.45], [43.5, -91.2], [41.5, -90.2], [40.4, -91.4], [40.6, -95.8], [42.5, -96.45], [43.5, -96.45]] },
-  { code: 'MO', coords: [[40.6, -95.8], [40.4, -91.4], [38.7, -90.15], [37.0, -89.1], [36.0, -89.7], [36.5, -94.6], [39.1, -94.6], [40.0, -95.3], [40.6, -95.8]] },
-  { code: 'AR', coords: [[36.5, -94.6], [36.0, -89.7], [33.0, -91.15], [33.0, -94.05], [33.9, -94.5], [36.5, -94.6]] },
-  { code: 'LA', coords: [[33.0, -94.05], [33.0, -91.15], [31.0, -91.6], [31.0, -89.7], [29.2, -89.1], [29.5, -91.4], [29.7, -93.8], [31.2, -93.6], [33.0, -94.05]] },
-  { code: 'WI', coords: [[46.8, -92.1], [46.6, -90.2], [45.8, -88.1], [45.1, -87.6], [42.5, -87.8], [42.5, -90.65], [44.5, -92.1], [46.8, -92.1]] },
-  { code: 'IL', coords: [[42.5, -90.65], [42.5, -87.8], [41.7, -87.5], [38.7, -87.5], [37.0, -89.1], [38.7, -90.15], [40.4, -91.4], [41.5, -90.2], [42.5, -90.65]] },
-  { code: 'MI', coords: [[41.75, -86.8], [43.5, -86.5], [45.8, -84.7], [45.1, -83.3], [43.0, -82.4], [41.75, -83.45], [41.75, -86.8]] },
-  { code: 'MI-UP', coords: [[46.6, -90.2], [47.4, -88.0], [46.5, -84.4], [45.9, -83.6], [45.8, -88.1], [46.6, -90.2]] },
-  { code: 'IN', coords: [[41.75, -87.5], [41.75, -84.8], [38.8, -84.8], [37.8, -87.9], [38.7, -87.5], [41.75, -87.5]] },
-  { code: 'OH', coords: [[41.75, -84.8], [41.75, -83.45], [41.4, -82.1], [41.98, -80.52], [39.1, -80.52], [38.4, -82.6], [39.1, -84.8], [41.75, -84.8]] },
-  { code: 'KY', coords: [[39.1, -84.8], [38.4, -82.6], [37.2, -82.0], [36.6, -83.7], [36.5, -89.5], [37.8, -87.9], [38.8, -84.8], [39.1, -84.8]] },
-  { code: 'TN', coords: [[36.5, -89.5], [36.6, -83.7], [36.5, -81.7], [35.0, -84.3], [35.0, -90.3], [36.5, -89.5]] },
-  { code: 'MS', coords: [[35.0, -90.3], [35.0, -88.2], [30.2, -88.4], [31.0, -89.7], [31.0, -91.6], [33.0, -91.15], [35.0, -90.3]] },
-  { code: 'AL', coords: [[35.0, -88.2], [35.0, -85.6], [32.9, -85.2], [31.0, -85.0], [31.0, -87.6], [30.2, -87.5], [30.2, -88.4], [35.0, -88.2]] },
-  { code: 'GA', coords: [[35.0, -85.6], [35.0, -83.1], [32.0, -80.85], [30.7, -81.5], [30.7, -84.9], [32.9, -85.2], [35.0, -85.6]] },
-  { code: 'FL', coords: [[31.0, -87.6], [31.0, -85.0], [30.7, -81.5], [28.5, -80.6], [25.2, -80.3], [25.8, -81.4], [27.8, -82.8], [29.9, -84.4], [30.2, -87.5], [31.0, -87.6]] },
-  { code: 'SC', coords: [[35.2, -82.6], [35.2, -80.8], [33.85, -78.55], [32.0, -80.85], [35.0, -83.1], [35.2, -82.6]] },
-  { code: 'NC', coords: [[36.55, -81.7], [36.55, -75.85], [35.2, -75.5], [33.85, -78.55], [35.2, -80.8], [35.2, -82.6], [35.0, -84.3], [36.55, -81.7]] },
-  { code: 'VA', coords: [[39.46, -78.35], [38.9, -77.05], [37.9, -76.2], [36.55, -75.85], [36.55, -83.6], [37.2, -82.0], [38.0, -79.9], [39.46, -78.35]] },
-  { code: 'WV', coords: [[40.6, -80.52], [39.72, -79.48], [39.46, -78.35], [38.0, -79.9], [37.2, -82.0], [38.4, -82.6], [39.1, -80.52], [40.6, -80.52]] },
-  { code: 'MD-DE', coords: [[39.72, -79.48], [39.72, -75.55], [38.45, -75.05], [38.0, -75.9], [38.9, -77.05], [39.46, -78.35], [39.72, -79.48]] },
-  { code: 'PA', coords: [[42.25, -79.76], [42.0, -79.76], [42.0, -75.3], [41.35, -74.7], [39.8, -75.15], [39.72, -75.55], [39.72, -80.52], [41.98, -80.52], [42.25, -79.76]] },
-  { code: 'NJ', coords: [[41.35, -74.7], [41.0, -73.9], [40.5, -74.0], [38.93, -74.9], [39.8, -75.15], [41.35, -74.7]] },
-  { code: 'NY', coords: [[43.3, -79.05], [43.6, -76.2], [45.0, -74.7], [45.0, -73.35], [41.3, -73.55], [40.75, -73.98], [41.0, -73.9], [41.35, -74.7], [42.0, -75.3], [42.0, -79.76], [42.88, -78.9], [43.3, -79.05]] },
-  { code: 'NY-LI', coords: [[40.6, -74.02], [40.88, -73.7], [41.12, -71.86], [40.6, -73.5], [40.6, -74.02]] },
-  { code: 'CT-RI', coords: [[42.05, -73.5], [42.02, -71.4], [41.35, -71.15], [41.1, -73.65], [42.05, -73.5]] },
-  { code: 'MA', coords: [[42.73, -73.26], [42.88, -70.82], [42.36, -71.0], [41.8, -69.95], [41.65, -70.6], [41.5, -71.15], [42.02, -71.4], [42.05, -73.5], [42.73, -73.26]] },
-  { code: 'VT', coords: [[45.0, -73.35], [45.0, -71.5], [42.73, -72.55], [42.73, -73.26], [45.0, -73.35]] },
-  { code: 'NH', coords: [[45.3, -71.1], [43.1, -70.7], [42.73, -71.2], [42.73, -72.55], [45.0, -71.5], [45.3, -71.1]] },
-  { code: 'ME', coords: [[45.3, -71.1], [47.45, -69.2], [47.0, -67.8], [44.8, -66.95], [43.65, -70.25], [43.1, -70.7], [45.3, -71.1]] }
-];
-
-// ============================================================================
-// THE 5 GREAT LAKES (Real Geographic Lat/Lon Shorelines)
-// ============================================================================
-const GREAT_LAKES_POLYGONS = [
-  { name: 'Lake Superior', coords: [[46.78, -92.1], [47.95, -89.5], [48.75, -87.5], [47.7, -84.9], [46.5, -84.4], [46.6, -87.4], [46.6, -90.2], [46.78, -92.1]] },
-  { name: 'Lake Michigan', coords: [[45.8, -87.1], [45.8, -84.8], [44.2, -86.4], [41.65, -87.2], [42.5, -87.8], [44.5, -87.5], [45.8, -87.1]] },
-  { name: 'Lake Huron', coords: [[45.9, -84.6], [46.1, -82.1], [44.9, -80.0], [43.1, -82.4], [44.0, -83.8], [45.1, -83.3], [45.9, -84.6]] },
-  { name: 'Lake Erie', coords: [[41.8, -83.4], [42.88, -78.92], [42.15, -80.1], [41.4, -82.2], [41.8, -83.4]] },
-  { name: 'Lake Ontario', coords: [[43.25, -79.85], [43.65, -79.35], [44.15, -76.4], [43.5, -76.2], [43.25, -79.05], [43.25, -79.85]] }
-];
-
-// ============================================================================
-// ALL 32 OFFICIAL NHL CITIES AT REAL PROJECTED GEOGRAPHIC COORDINATES
-// ============================================================================
-const RAW_32_NHL_CITIES = [
-  { code: 'SJS', id: 'sanjose',      name: 'San Jose',      team: 'Sharks',            region: 'CA', lat: 37.33, lon: -121.90, focus: 'Puck Support & Basics' },
-  { code: 'ANA', id: 'anaheim',      name: 'Anaheim',       team: 'Ducks',             region: 'CA', lat: 33.81, lon: -117.88, focus: '2-on-1 Support Lanes' },
-  { code: 'LAK', id: 'losangeles',   name: 'Los Angeles',   team: 'Kings',             region: 'CA', lat: 34.04, lon: -118.27, focus: 'O-Zone Triangle Spacing' },
-  { code: 'SEA', id: 'seattle',      name: 'Seattle',       team: 'Kraken',            region: 'WA', lat: 47.62, lon: -122.35, focus: 'High-Slot Coverage' },
-  { code: 'VAN', id: 'vancouver',    name: 'Vancouver',     team: 'Canucks',           region: 'BC', lat: 49.28, lon: -123.11, focus: 'Protecting the House' },
-  { code: 'CGY', id: 'calgary',      name: 'Calgary',       team: 'Flames',            region: 'AB', lat: 51.04, lon: -114.05, focus: 'Net-Front Box-Out' },
-  { code: 'EDM', id: 'edmonton',     name: 'Edmonton',      team: 'Oilers',            region: 'AB', lat: 53.55, lon: -113.49, focus: 'Controlled Breakouts' },
-  { code: 'VGK', id: 'vegas',        name: 'Las Vegas',     team: 'Golden Knights',    region: 'NV', lat: 36.10, lon: -115.18, focus: 'D-to-D Reverse Outlets' },
-  { code: 'UTA', id: 'utah',         name: 'Salt Lake',     team: 'Utah HC',           region: 'UT', lat: 40.77, lon: -111.90, focus: 'Center Low-and-Slow Curl' },
-  { code: 'COL', id: 'denver',       name: 'Denver',        team: 'Avalanche',         region: 'CO', lat: 39.75, lon: -105.01, focus: 'Speed Regroup Entries' },
-  { code: 'DAL', id: 'dallas',       name: 'Dallas',        team: 'Stars',             region: 'TX', lat: 32.79, lon: -96.81,  focus: 'Odd-Man Rush Width' },
-  { code: 'WPG', id: 'winnipeg',     name: 'Winnipeg',      team: 'Jets',              region: 'MB', lat: 49.89, lon: -97.14,  focus: 'Middle-Lane Drive' },
-  { code: 'MIN', id: 'stpaul',       name: 'St. Paul',      team: 'Wild',              region: 'MN', lat: 44.94, lon: -93.10,  focus: 'F3 High-Slot Trailer' },
-  { code: 'STL', id: 'stlouis',      name: 'St. Louis',     team: 'Blues',             region: 'MO', lat: 38.63, lon: -90.20,  focus: 'Blue-Line Gap Surfing' },
-  { code: 'CHI', id: 'chicago',      name: 'Chicago',       team: 'Blackhawks',        region: 'IL', lat: 41.88, lon: -87.67,  focus: 'Cycle & Cutback Shielding' },
-  { code: 'NSH', id: 'nashville',    name: 'Nashville',     team: 'Predators',         region: 'TN', lat: 36.16, lon: -86.78,  focus: 'Stick-on-Puck Angling' },
-  { code: 'DET', id: 'detroit',      name: 'Detroit',       team: 'Red Wings',         region: 'MI', lat: 42.34, lon: -83.05,  focus: '2-1-2 Forecheck Pinch' },
-  { code: 'CBJ', id: 'columbus',     name: 'Columbus',      team: 'Blue Jackets',      region: 'OH', lat: 39.97, lon: -83.01,  focus: 'Royal-Road Seam Denial' },
-  { code: 'TOR', id: 'toronto',      name: 'Toronto',       team: 'Maple Leafs',       region: 'ON', lat: 43.64, lon: -79.38,  focus: 'High-Tempo Two-Touch' },
-  { code: 'OTT', id: 'ottawa',       name: 'Ottawa',        team: 'Senators',          region: 'ON', lat: 45.30, lon: -75.93,  focus: 'Neutral Zone Hinge' },
-  { code: 'MTL', id: 'montreal',     name: 'Montreal',      team: 'Canadiens',         region: 'QC', lat: 45.50, lon: -73.57,  focus: 'Backcheck Gut Track' },
-  { code: 'BOS', id: 'boston',       name: 'Boston',        team: 'Bruins',            region: 'MA', lat: 42.37, lon: -71.06,  focus: 'Board-Seal Breakouts' },
-  { code: 'BUF', id: 'buffalo',      name: 'Buffalo',       team: 'Sabres',            region: 'NY', lat: 42.87, lon: -78.88,  focus: 'Shoulder-Check Scanning' },
-  { code: 'NYR', id: 'nyrangers',    name: 'New York',      team: 'Rangers',           region: 'NY', lat: 40.75, lon: -73.99,  focus: 'Quick-Up Transition' },
-  { code: 'NYI', id: 'nyislanders',  name: 'Long Island',   team: 'Islanders',         region: 'NY', lat: 40.72, lon: -73.52,  focus: 'Structured Low House' },
-  { code: 'NJD', id: 'newjersey',    name: 'New Jersey',    team: 'Devils',            region: 'NJ', lat: 40.73, lon: -74.19,  focus: 'Speed Entry & Delay' },
-  { code: 'PHI', id: 'philadelphia', name: 'Philadelphia',  team: 'Flyers',            region: 'PA', lat: 39.90, lon: -75.17,  focus: 'Strong-Wall Rim Seal' },
-  { code: 'PIT', id: 'pittsburgh',   name: 'Pittsburgh',    team: 'Penguins',          region: 'PA', lat: 40.44, lon: -79.99,  focus: 'Give-and-GoScissors' },
-  { code: 'WSH', id: 'washington',   name: 'Washington',    team: 'Capitals',          region: 'DC', lat: 38.90, lon: -77.02,  focus: '5-on-4 Umbrella One-Timer' },
-  { code: 'CAR', id: 'carolina',     name: 'Raleigh',       team: 'Hurricanes',        region: 'NC', lat: 35.80, lon: -78.72,  focus: 'Aggressive Point Pinch' },
-  { code: 'TBL', id: 'tampabay',     name: 'Tampa Bay',     team: 'Lightning',         region: 'FL', lat: 27.94, lon: -82.45,  focus: '4-on-5 Diamond PK' },
-  { code: 'FLA', id: 'florida',      name: 'Florida',       team: 'Panthers • Cup Final', region: 'FL', lat: 26.16, lon: -80.33, focus: 'Championship All-Zone IQ' }
-];
-
-export const NHL_ATLAS_CITIES = RAW_32_NHL_CITIES.map((c, stopIdx) => {
-  const [x, y] = projectNorthAmericaLatLon(c.lat, c.lon);
+function resolveFriend5ZoneMetrics(fr = {}) {
+  if (fr && fr.zoneMetrics && typeof fr.zoneMetrics === 'object') {
+    return {
+      dz: Math.max(0, Math.min(100, Math.round(Number(fr.zoneMetrics.dz) || 0))),
+      nz: Math.max(0, Math.min(100, Math.round(Number(fr.zoneMetrics.nz) || 0))),
+      om: Math.max(0, Math.min(100, Math.round(Number(fr.zoneMetrics.om) || 0))),
+      oz: Math.max(0, Math.min(100, Math.round(Number(fr.zoneMetrics.oz) || 0))),
+      st: Math.max(0, Math.min(100, Math.round(Number(fr.zoneMetrics.st) || 0)))
+    };
+  }
+  const baseIq = Math.max(0, Number(fr?.iqScore || 0));
+  if (baseIq <= 0) {
+    return { dz: 0, nz: 0, om: 0, oz: 0, st: 0 };
+  }
+  const clamp = (v) => Math.max(12, Math.min(99, Math.round(v)));
   return {
-    ...c,
-    stopIndex: stopIdx,
-    stopNumber: stopIdx + 1,
-    x,
-    y
+    dz: clamp(baseIq * 0.58 + 14),
+    nz: clamp(baseIq * 0.54 + 16),
+    om: clamp(baseIq * 0.60 + 15),
+    oz: clamp(baseIq * 0.56 + 13),
+    st: clamp(baseIq * 0.50 + 12)
   };
-});
+}
+
+/**
+ * Opens the Clickable **Player Scouting Profile Card** modal (`#friendScoutingCardModal`)
+ * from EITHER the 32-City NHL Head-to-Head Map OR the Friends & Family Wall!
+ * Displays:
+ *   - Custom 75/25 painted avatar wearing equipped 75/25 gear (with finger-drag spin!)
+ *   - Full list of equipped Pro Shop items with painted 75/25 colorway thumbnails
+ *   - Hockey IQ, Age Band / Position, & Head-to-Head City Stop (`City X of 32`)
+ *   - 5-Zone Tactical Skill Metrics (`Breakouts & D-Zone %`, `Neutral Zone %`, `Odd-Man Rush %`, `O-Zone %`, `Special Teams %`)
+ */
+export function openFriendScoutingCardModal(friendData = {}) {
+  if (typeof document === 'undefined' || !friendData) return null;
+
+  let modal = document.getElementById('friendScoutingCardModal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'friendScoutingCardModal';
+    modal.className = 'hidden fixed inset-0 z-[128] bg-slate-950/88 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 overflow-y-auto';
+    document.body.appendChild(modal);
+
+    modal.addEventListener('click', (ev) => {
+      if (ev.target === modal) {
+        modal.classList.add('hidden');
+      }
+    });
+  }
+
+  const cfg = normalizeSkaterState(friendData);
+  const stopIdx = Math.max(0, Math.min(31, Number(friendData.cityStopIdx ?? friendData.currentCityIdx ?? 0)));
+  const cityObj = NHL_ATLAS_CITIES[stopIdx] || NHL_ATLAS_CITIES[0];
+  const divLabel = String(friendData.divisionLabel || friendData.ageGroup || '12U AA').trim();
+  const posLabel = String(friendData.positionCode || friendData.position || 'C').trim().toUpperCase();
+  const iqVal = Math.max(0, Math.round(Number(friendData.iqScore ?? friendData.hockeyIQ ?? 0)));
+  const jNum = cfg.jerseyNumber ? `#${cfg.jerseyNumber}` : '';
+  const metrics = resolveFriend5ZoneMetrics(friendData);
+
+  const jerseySwatch = STARTER_JERSEY_SWATCHES.find((sw) => sw.hex.toLowerCase() === cfg.jerseyColor.toLowerCase()) || {
+    id: 'custom-jersey',
+    name: 'Custom Team Pro Sweater',
+    hex: cfg.jerseyColor,
+    accent: cfg.jerseyAccent
+  };
+
+  const equippedList = [
+    { slotLabel: 'Stick',          item: { ...cfg.stickItem,  category: 'Stick' } },
+    { slotLabel: 'Gloves',         item: { ...cfg.glovesItem, category: 'Gloves' } },
+    { slotLabel: 'Helmet / Visor', item: { ...cfg.visorItem,  category: cfg.visorItem.category || 'Visor' } },
+    { slotLabel: 'Skates',         item: { ...cfg.skatesItem, category: 'Skates' } },
+    { slotLabel: 'Sweater',        item: { id: jerseySwatch.id, category: 'Jersey', name: jerseySwatch.name, color: cfg.jerseyColor, accentColor: cfg.jerseyAccent } }
+  ];
+
+  const zoneRows = [
+    { key: 'dz', label: 'Breakouts & D-Zone', pct: metrics.dz, barCls: 'from-cyan-400 to-sky-500',     txtCls: 'text-cyan-300' },
+    { key: 'nz', label: 'Neutral Zone',       pct: metrics.nz, barCls: 'from-emerald-400 to-teal-500', txtCls: 'text-emerald-300' },
+    { key: 'om', label: 'Odd-Man Rush',       pct: metrics.om, barCls: 'from-amber-400 to-orange-500', txtCls: 'text-amber-300' },
+    { key: 'oz', label: 'O-Zone',             pct: metrics.oz, barCls: 'from-fuchsia-400 to-pink-500', txtCls: 'text-pink-300' },
+    { key: 'st', label: 'Special Teams',      pct: metrics.st, barCls: 'from-indigo-400 to-violet-500',txtCls: 'text-indigo-300' }
+  ];
+
+  modal.innerHTML = `
+    <div id="friendScoutingCardDialog" data-scouting-friend="${escMap(friendData.friendCode || cfg.name)}" class="w-full max-w-4xl rounded-2xl bg-[#0b1324] border-2 border-amber-400 p-4 sm:p-5 shadow-2xl space-y-3.5 my-auto text-left">
+      <!-- Top Scouting Header -->
+      <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-2.5">
+        <div class="flex flex-wrap items-center gap-2.5">
+          <span class="px-2.5 py-1 rounded-lg bg-amber-400 text-slate-950 text-[10px] font-black uppercase tracking-wider">
+            🏒 Player Scouting Card
+          </span>
+          <h3 class="text-base sm:text-lg font-black text-white">
+            ${escMap(cfg.name)} <span class="text-cyan-300">${escMap(jNum)}</span>
+          </h3>
+          ${friendData.isSamplePreview ? '<span class="px-2 py-0.5 rounded-full bg-cyan-500/20 border border-cyan-400/60 text-cyan-200 text-[10px] font-black">Sample Teammate</span>' : ''}
+        </div>
+        <button type="button" id="btnCloseFriendScoutingCard" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-600 text-white text-xs font-black cursor-pointer">
+          ✕ Close
+        </button>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-stretch">
+        <!-- LEFT COLUMN: Custom 75/25 Painted Skater Wearing Equipped Gear -->
+        <div class="md:col-span-5 min-h-0 overflow-hidden rounded-2xl bg-slate-950/95 border border-cyan-400/50 p-3 flex flex-col items-center gap-2">
+          <div class="w-full flex items-center justify-between text-[10px] font-black uppercase shrink-0">
+            <span class="text-cyan-300">75/25 Painted Loadout</span>
+            <span class="text-amber-300">${escMap(divLabel)} • ${escMap(posLabel)}</span>
+          </div>
+          <div id="friendScoutingSkaterStage" class="w-full flex-1 min-h-0 flex items-center justify-center overflow-hidden" style="height: 340px; max-height: 365px;"></div>
+        </div>
+
+        <!-- RIGHT COLUMN: Hockey IQ, City X of 32, 5-Zone Tactical Skill Metrics & Equipped Pro Shop Gear List -->
+        <div class="md:col-span-7 flex flex-col justify-between gap-3">
+          <!-- Stat KPI Strip -->
+          <div class="grid grid-cols-3 gap-2">
+            <div class="p-2.5 rounded-xl bg-slate-950 border border-emerald-400/50">
+              <div class="text-[9.5px] font-black uppercase text-slate-400">Hockey IQ</div>
+              <div data-scouting-iq="${iqVal}" class="text-base sm:text-lg font-black text-emerald-300 mt-0.5">🧠 ${iqVal} IQ</div>
+            </div>
+            <div class="p-2.5 rounded-xl bg-slate-950 border border-cyan-400/50">
+              <div class="text-[9.5px] font-black uppercase text-slate-400">Age Band / Pos</div>
+              <div data-scouting-div-pos="${escMap(divLabel)} • ${escMap(posLabel)}" class="text-xs sm:text-sm font-black text-cyan-200 mt-1">${escMap(divLabel)} • ${escMap(posLabel)}</div>
+            </div>
+            <div class="p-2.5 rounded-xl bg-slate-950 border border-amber-400/55">
+              <div class="text-[9.5px] font-black uppercase text-slate-400">Head-to-Head Tour</div>
+              <div data-scouting-city-stop="City ${cityObj.stopNumber} of 32" class="text-xs sm:text-sm font-black text-amber-300 mt-0.5">📍 City ${cityObj.stopNumber} of 32</div>
+              <div class="text-[10px] font-bold text-slate-300 truncate">${escMap(cityObj.name)} (${escMap(cityObj.code)})</div>
+            </div>
+          </div>
+
+          <!-- 5-Zone Tactical Skill Metrics -->
+          <div class="p-3 rounded-xl bg-slate-950/95 border border-slate-800 space-y-1.5" data-scouting-5zone-metrics="true">
+            <div class="text-[10px] font-black uppercase tracking-wider text-cyan-300">📊 5-Zone Tactical Skill Metrics</div>
+            <div class="space-y-1.5">
+              ${zoneRows.map((zr) => `
+                <div data-scouting-zone-row="${zr.key}" class="space-y-0.5">
+                  <div class="flex items-center justify-between text-[11px] font-black">
+                    <span class="text-slate-200">${escMap(zr.label)}</span>
+                    <span class="${zr.txtCls}">${zr.pct}%</span>
+                  </div>
+                  <div class="w-full h-2 rounded-full bg-slate-900 overflow-hidden border border-slate-800">
+                    <div class="h-full rounded-full bg-gradient-to-r ${zr.barCls}" style="width:${zr.pct}%;"></div>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+
+          <!-- Equipped Pro Shop Items Showcase -->
+          <div class="p-3 rounded-xl bg-slate-950/95 border border-slate-800 space-y-1.5" data-scouting-equipped-list="true">
+            <div class="text-[10px] font-black uppercase tracking-wider text-amber-300">🎒 Equipped Pro Shop Gear Locker</div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
+              ${equippedList.map((eq) => {
+                const thumb = renderGearItemArtSvg(eq.item, { dockTile: true }).replace(/w-12 h-9 sm:w-14 sm:h-10/g, 'w-11 h-8');
+                return `
+                  <div data-scouting-gear-slot="${escMap(eq.slotLabel)}" class="px-2 py-1.5 rounded-xl bg-[#0b1324] border border-slate-800 flex items-center gap-2">
+                    ${thumb}
+                    <div class="min-w-0 flex-1">
+                      <div class="text-[9px] font-black uppercase text-slate-400 leading-none">${escMap(eq.slotLabel)}</div>
+                      <div class="text-[11px] font-black text-white truncate mt-0.5">${escMap(eq.item.name || eq.slotLabel)}</div>
+                    </div>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  modal.classList.remove('hidden');
+
+  modal.querySelector('#btnCloseFriendScoutingCard')?.addEventListener('click', (ev) => {
+    ev.stopPropagation();
+    modal.classList.add('hidden');
+  });
+
+  const stageEl = modal.querySelector('#friendScoutingSkaterStage');
+  if (stageEl) {
+    renderCustomizableSkater(stageEl, friendData, {
+      angleDeg: 0,
+      showLoadoutDock: true,
+      showGearOnSkater: true
+    });
+  }
+
+  return modal;
+}
 
 /**
  * Deterministic Screen-Space Label Placement Solver so dense clusters
@@ -270,7 +382,6 @@ export const NHL_ATLAS_CITIES = RAW_32_NHL_CITIES.map((c, stopIdx) => {
 function solveNonOverlappingLabels(cities, zoom = 1.0) {
   const z = Math.max(1.0, Number(zoom) || 1.0);
   const placedRects = [];
-  // Reserve pin circles in screen space first
   for (const c of cities) {
     const sx = c.x * z;
     const sy = c.y * z;
@@ -324,24 +435,8 @@ function solveNonOverlappingLabels(cities, zoom = 1.0) {
   return placements;
 }
 
-const PRECOMPUTED_CANADA_PATHS = CANADA_PROVINCE_POLYGONS.map((p) => ({
-  code: p.code,
-  name: p.name,
-  d: polyPathFromLatLon(p.coords, true)
-}));
-
-const PRECOMPUTED_US_PATHS = US_STATE_POLYGONS.map((s) => ({
-  code: s.code,
-  d: polyPathFromLatLon(s.coords, true)
-}));
-
-const PRECOMPUTED_LAKES_PATHS = GREAT_LAKES_POLYGONS.map((lk) => ({
-  name: lk.name,
-  d: polyPathFromLatLon(lk.coords, true)
-}));
-
 /**
- * Mounts the Interactive Zoomable/Pannable 32-City NHL Atlas Map into `container`.
+ * Mounts the Interactive Zoomable/Pannable 32-City Illustrated North America NHL Atlas Map into `container`.
  */
 export function renderNhlAtlasMap(container, options = {}) {
   const root = typeof container === 'string'
@@ -354,26 +449,24 @@ export function renderNhlAtlasMap(container, options = {}) {
   const conqueredSet = new Set(Array.isArray(profile.unlockedCityPatches) ? profile.unlockedCityPatches : []);
   const maxUnlockedIdx = Math.max(currentCityIdx, Number(profile.unlockedCityIdx || 0));
 
-  // STRICT FRIEND PIN RULE: Plot ONLY real accepted friends (`0` fake friends on a brand-new profile!)
-  const realFriends = Array.isArray(profile.acceptedFriends)
-    ? profile.acceptedFriends.filter((f) => f && f.friendCode && !['RHET88', 'MAYA19', 'SK8R24'].includes(f.friendCode))
-    : [];
+  const connectedFriends = getEffectiveClubhouseFriends(profile);
+  const previewSampleOn = isSampleTeammatesPreviewEnabled();
 
   const youNum = profile.jerseyNumber !== undefined && profile.jerseyNumber !== null && String(profile.jerseyNumber).trim() !== ''
     ? String(profile.jerseyNumber).trim()
     : '9';
   const youCity = NHL_ATLAS_CITIES[currentCityIdx] || NHL_ATLAS_CITIES[0];
 
-  const skaterPins = [
+  const rawPins = [
     {
       pinId: 'YOU',
       isYou: true,
-      badgeText: `You • #${youNum}`,
+      badgeText: `YOU • #${youNum}`,
       cityIdx: currentCityIdx,
       city: youCity,
       skaterData: profile
     },
-    ...realFriends.map((fr, idx) => {
+    ...connectedFriends.map((fr, idx) => {
       const fIdx = Math.max(0, Math.min(31, Number(fr.cityStopIdx ?? fr.currentCityIdx ?? 0)));
       const fCity = NHL_ATLAS_CITIES[fIdx] || NHL_ATLAS_CITIES[0];
       const fNum = fr.jerseyNumber !== undefined && fr.jerseyNumber !== null && String(fr.jerseyNumber).trim() !== ''
@@ -390,17 +483,24 @@ export function renderNhlAtlasMap(container, options = {}) {
     })
   ];
 
-  // State: Always opens clean & unobstructed (NEVER auto-popping any player card!)
+  // Count per-city stack index so pins at different cities sit neatly right over their own city!
+  const cityPinStackCounts = new Map();
+  const skaterPins = rawPins.map((sp) => {
+    const stackIdx = cityPinStackCounts.get(sp.city.code) || 0;
+    cityPinStackCounts.set(sp.city.code, stackIdx + 1);
+    return { ...sp, stackIdx };
+  });
+
   let zoom = 1.0;
   let panX = 0;
   let panY = 0;
-  let selectedEntity = null; // null | { type: 'city' | 'skater', city, skaterPin }
+  let selectedEntity = null;
 
   const clampPan = () => {
     const maxPanX = 1000 * (zoom - 1);
-    const maxPanY = 560 * (zoom - 1);
-    panX = Math.min(40 * zoom, Math.max(-maxPanX - 40 * zoom, panX));
-    panY = Math.min(30 * zoom, Math.max(-maxPanY - 30 * zoom, panY));
+    const maxPanY = 562 * (zoom - 1);
+    panX = Math.min(36 * zoom, Math.max(-maxPanX - 36 * zoom, panX));
+    panY = Math.min(28 * zoom, Math.max(-maxPanY - 28 * zoom, panY));
     if (zoom <= 1.02) {
       panX = 0;
       panY = 0;
@@ -408,100 +508,81 @@ export function renderNhlAtlasMap(container, options = {}) {
   };
 
   root.innerHTML = `
-    <div id="nhlAtlasMapRoot" data-nhl-atlas="v151" class="space-y-2 select-none">
-      <!-- Top Atlas Controls Bar -->
+    <div id="nhlAtlasMapRoot" data-nhl-atlas="v155-painted-75-25" class="space-y-2 select-none">
+      <!-- Hidden HTML <img> raster probe verifying naturalWidth > 256 -->
+      <img src="${PAINTED_NORTH_AMERICA_MAP_URL}" alt="" aria-hidden="true" data-nhl-map-raster="true" class="hidden" />
+
+      <!-- Top Atlas Controls Bar + 1-Tap Sample Teammates Preview Toggle -->
       <div class="flex flex-wrap items-center justify-between gap-2 px-1">
         <div class="flex flex-wrap items-center gap-2 text-xs">
           <span class="px-2.5 py-1 rounded-lg bg-slate-900 border border-cyan-400/60 text-cyan-200 font-black">
-            🗺️ 32-City North America NHL Tour Atlas
+            🗺️ 32-City NHL Head-to-Head Map Race
           </span>
           <span class="text-[11px] font-bold text-slate-300">
-            Active Stop: <strong class="text-amber-300">${escMap(youCity.name)} (${escMap(youCity.code)})</strong> • ${conqueredSet.size} / 32 Patches Earned
+            Active Stop: <strong class="text-amber-300">${escMap(youCity.name)} (${escMap(youCity.code)})</strong> • ${conqueredSet.size} / 32 Patches
           </span>
         </div>
-        <div class="flex items-center gap-1.5" role="group" aria-label="Atlas Map Zoom Controls">
-          <button type="button" id="btnAtlasZoomOut" class="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-600 text-white text-xs font-black cursor-pointer" title="Zoom Out">−</button>
-          <span id="atlasZoomBadge" data-atlas-zoom="1.0" class="px-2.5 py-1 rounded-lg bg-slate-950 border border-cyan-400/70 text-cyan-300 text-xs font-black min-w-[48px] text-center">1.0x</span>
-          <button type="button" id="btnAtlasZoomIn" class="px-2.5 py-1 rounded-lg bg-cyan-400 hover:bg-cyan-300 text-slate-950 text-xs font-black shadow cursor-pointer" title="Zoom In">+</button>
-          <button type="button" id="btnAtlasZoomReset" class="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-amber-400/60 text-amber-200 text-xs font-black cursor-pointer">Reset</button>
+        <div class="flex flex-wrap items-center gap-1.5">
+          <button
+            type="button"
+            id="btnToggleSampleTeammatesMap"
+            data-toggle-sample-teammates="true"
+            aria-pressed="${previewSampleOn ? 'true' : 'false'}"
+            class="px-2.5 py-1 rounded-lg border text-[11px] font-black transition cursor-pointer ${
+              previewSampleOn
+                ? 'bg-emerald-400 text-slate-950 border-emerald-200 shadow'
+                : 'bg-slate-900 hover:bg-slate-800 border-emerald-400/60 text-emerald-200'
+            }"
+          >
+            👀 Preview Sample Teammates${previewSampleOn ? ': ON' : ''}
+          </button>
+          <div class="flex items-center gap-1" role="group" aria-label="Atlas Map Zoom Controls">
+            <button type="button" id="btnAtlasZoomOut" class="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-600 text-white text-xs font-black cursor-pointer" title="Zoom Out">−</button>
+            <span id="atlasZoomBadge" data-atlas-zoom="1.0" class="px-2.5 py-1 rounded-lg bg-slate-950 border border-cyan-400/70 text-cyan-300 text-xs font-black min-w-[48px] text-center">1.0x</span>
+            <button type="button" id="btnAtlasZoomIn" class="px-2.5 py-1 rounded-lg bg-cyan-400 hover:bg-cyan-300 text-slate-950 text-xs font-black shadow cursor-pointer" title="Zoom In">+</button>
+            <button type="button" id="btnAtlasZoomReset" class="px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-amber-400/60 text-amber-200 text-xs font-black cursor-pointer">Reset</button>
+          </div>
         </div>
       </div>
 
-      <!-- Interactive North America Vector Viewport -->
-      <div id="nhlAtlasViewport" class="relative w-full h-[310px] sm:h-[365px] rounded-2xl bg-[#050c18] border-2 border-cyan-400/55 overflow-hidden shadow-2xl" style="touch-action: none;">
-        <svg id="nhlAtlasSvg" viewBox="0 0 1000 560" preserveAspectRatio="xMidYMid meet" class="w-full h-full block cursor-grab active:cursor-grabbing">
-          <defs>
-            <radialGradient id="atlasOceanGrad" cx="50%" cy="42%" r="72%">
-              <stop offset="0%" stop-color="#0b192e"/>
-              <stop offset="65%" stop-color="#060f1e"/>
-              <stop offset="100%" stop-color="#030711"/>
-            </radialGradient>
-            <linearGradient id="atlasCanadaFill" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stop-color="#10233d"/>
-              <stop offset="100%" stop-color="#152c4a"/>
-            </linearGradient>
-            <linearGradient id="atlasUsaFill" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stop-color="#173153"/>
-              <stop offset="100%" stop-color="#0f223c"/>
-            </linearGradient>
-            <linearGradient id="atlasLakeFill" x1="0%" y1="0%" x2="100%" y2="100%">
-              <stop offset="0%" stop-color="#07284a"/>
-              <stop offset="100%" stop-color="#041529"/>
-            </linearGradient>
-          </defs>
-
-          <rect width="1000" height="560" fill="url(#atlasOceanGrad)"/>
+      <!-- Interactive 16:9 Illustrated North America Sports Atlas Viewport -->
+      <div id="nhlAtlasViewport" class="relative mx-auto w-full max-w-[692px] h-[310px] sm:h-[389px] rounded-2xl bg-[#05101f] border-2 border-cyan-400/60 overflow-hidden shadow-2xl" style="touch-action: none;">
+        <svg id="nhlAtlasSvg" viewBox="0 0 1000 562" preserveAspectRatio="xMidYMid meet" class="w-full h-full block cursor-grab active:cursor-grabbing">
+          <rect width="1000" height="562" fill="#05101f"/>
 
           <g id="nhlAtlasTransformStage" transform="translate(0, 0) scale(1)">
-            <!-- Subtle Graticule Parallels & Meridians -->
-            <g stroke="rgba(56,189,248,0.07)" stroke-width="0.9" fill="none">
-              <path d="${polyPathFromLatLon([[30,-128],[30,-110],[30,-95],[30,-80],[30,-66]], false)}"/>
-              <path d="${polyPathFromLatLon([[40,-128],[40,-110],[40,-95],[40,-80],[40,-66]], false)}"/>
-              <path d="${polyPathFromLatLon([[50,-132],[50,-112],[50,-95],[50,-78],[50,-62]], false)}"/>
-              <path d="${polyPathFromLatLon([[25,-120],[40,-120],[58,-120]], false)}"/>
-              <path d="${polyPathFromLatLon([[25,-100],[40,-100],[58,-100]], false)}"/>
-              <path d="${polyPathFromLatLon([[25,-80],[40,-80],[56,-80]], false)}"/>
-            </g>
-
-            <!-- Canadian Provinces -->
-            <g id="nhlAtlasCanadaProvinces" fill="url(#atlasCanadaFill)" stroke="rgba(125,211,252,0.34)" stroke-linejoin="round">
-              ${PRECOMPUTED_CANADA_PATHS.map((p) => `<path data-atlas-province="${p.code}" d="${p.d}"/>`).join('')}
-            </g>
-
-            <!-- United States Borders -->
-            <g id="nhlAtlasUsStates" fill="url(#atlasUsaFill)" stroke="rgba(56,189,248,0.42)" stroke-linejoin="round">
-              ${PRECOMPUTED_US_PATHS.map((s) => `<path data-atlas-state="${s.code}" d="${s.d}"/>`).join('')}
-            </g>
-
-            <!-- International US-Canada Border Accent -->
-            <path d="${polyPathFromLatLon([[49.0,-123.2],[49.0,-95.15]], false)}" fill="none" stroke="rgba(250,204,21,0.38)" stroke-width="1.2" stroke-dasharray="4 2"/>
-
-            <!-- The 5 Great Lakes -->
-            <g id="nhlAtlasGreatLakes" fill="url(#atlasLakeFill)" stroke="rgba(56,189,248,0.55)" stroke-linejoin="round">
-              ${PRECOMPUTED_LAKES_PATHS.map((lk) => `<path data-atlas-lake="${escMap(lk.name)}" d="${lk.d}"/>`).join('')}
-            </g>
+            <!-- Authentic 75/25 Illustrated North America (United States + Canada) Sports Atlas Image -->
+            <image
+              id="nhlAtlasIllustratedMapImage"
+              href="${PAINTED_NORTH_AMERICA_MAP_URL}"
+              x="0"
+              y="0"
+              width="1000"
+              height="562"
+              preserveAspectRatio="none"
+            />
 
             <!-- Subtle 32-City Tour Route Lines -->
             <g id="nhlAtlasTourRoutes" fill="none">
               ${NHL_ATLAS_CITIES.slice(0, -1).map((c1, idx) => {
                 const c2 = NHL_ATLAS_CITIES[idx + 1];
                 const done = idx < maxUnlockedIdx;
-                return `<line x1="${c1.x}" y1="${c1.y}" x2="${c2.x}" y2="${c2.y}" stroke="${done ? '#22d3ee' : 'rgba(148,163,184,0.28)'}" stroke-width="${done ? '1.8' : '1.0'}" ${done ? '' : 'stroke-dasharray="3.5 3.5"'}/>`;
+                return `<line x1="${c1.x}" y1="${c1.y}" x2="${c2.x}" y2="${c2.y}" stroke="${done ? '#22d3ee' : 'rgba(148,163,184,0.34)'}" stroke-width="${done ? '2.0' : '1.1'}" ${done ? '' : 'stroke-dasharray="3.5 3.5"'}/>`;
               }).join('')}
             </g>
 
-            <!-- Dynamic Counter-Scaled 32 NHL City Pins + Skater Pins -->
+            <!-- Dynamic Counter-Scaled 32 NHL City Pins + Head-to-Head Skater Race Pins -->
             <g id="nhlAtlasDynamicPinsLayer"></g>
           </g>
         </svg>
 
-        <!-- Clean Floating Detail Popover (Hidden on Open — Appears Only When a Pin Is Tapped!) -->
-        <div id="nhlAtlasDetailPopover" class="hidden absolute right-2.5 bottom-2.5 left-2.5 sm:left-auto sm:w-80 rounded-2xl bg-slate-950/96 border-2 border-amber-400 p-3 shadow-2xl backdrop-blur-xl z-30"></div>
+        <!-- Clean Floating City Detail Popover -->
+        <div id="nhlAtlasDetailPopover" class="hidden absolute right-2.5 bottom-2.5 left-2.5 sm:left-auto sm:w-80 rounded-2xl bg-[#0b1324]/97 border-2 border-amber-400 p-3 shadow-2xl backdrop-blur-xl z-30"></div>
       </div>
 
-      <div class="flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-400 px-1">
-        <span>Drag to pan • Pinch, scroll, or tap <strong>+ / −</strong> to zoom up to <strong>4.0x</strong> into East Coast &amp; Metro divisions • Tap any city or skater pin for details.</span>
-        <span class="text-cyan-300 font-bold">${realFriends.length} Teammate${realFriends.length === 1 ? '' : 's'} Connected on Map</span>
+      <div class="flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-300 px-1 sm:pr-32">
+        <span>Drag to pan • Pinch, scroll, or tap <strong>+ / −</strong> to zoom up to <strong>4.0x</strong> • Tap any teammate pin to open their <strong>Player Scouting Card</strong>!</span>
+        <span data-atlas-connected-count="${connectedFriends.length}" class="text-cyan-300 font-bold shrink-0">${connectedFriends.length} Teammate${connectedFriends.length === 1 ? '' : 's'} on Map</span>
       </div>
     </div>
   `;
@@ -512,9 +593,13 @@ export function renderNhlAtlasMap(container, options = {}) {
   const pinsLayerEl = root.querySelector('#nhlAtlasDynamicPinsLayer');
   const zoomBadgeEl = root.querySelector('#atlasZoomBadge');
   const popoverEl = root.querySelector('#nhlAtlasDetailPopover');
-  const canadaGroup = root.querySelector('#nhlAtlasCanadaProvinces');
-  const usGroup = root.querySelector('#nhlAtlasUsStates');
-  const lakesGroup = root.querySelector('#nhlAtlasGreatLakes');
+
+  root.querySelector('#btnToggleSampleTeammatesMap')?.addEventListener('click', () => {
+    if (typeof window !== 'undefined' && window.state) {
+      window.state.previewSampleTeammates = !window.state.previewSampleTeammates;
+    }
+    renderNhlAtlasMap(root, options);
+  });
 
   const renderPopover = () => {
     if (!popoverEl) return;
@@ -525,14 +610,15 @@ export function renderNhlAtlasMap(container, options = {}) {
     }
 
     const city = selectedEntity.city;
-    const skaterPin = selectedEntity.skaterPin || skaterPins.find((p) => p.city.code === city.code) || null;
+    const pinsAtCity = skaterPins.filter((p) => p.city.code === city.code);
+    const primaryPin = selectedEntity.skaterPin || pinsAtCity[0] || null;
     const isConquered = conqueredSet.has(city.id) || conqueredSet.has(city.code) || city.stopIndex < currentCityIdx;
     const isCurrent = city.stopIndex === currentCityIdx;
     const statusPill = isConquered
       ? '<span class="px-2 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-400 text-emerald-300 text-[10px] font-black">✅ Tour Stop Conquered</span>'
       : (isCurrent
           ? '<span class="px-2 py-0.5 rounded-full bg-cyan-500/20 border border-cyan-300 text-cyan-200 text-[10px] font-black">📍 Active Tour Stop</span>'
-          : `<span class="px-2 py-0.5 rounded-full bg-slate-800 border border-slate-600 text-slate-300 text-[10px] font-black">Stop #${city.stopNumber} / 32</span>`);
+          : `<span class="px-2 py-0.5 rounded-full bg-slate-800 border border-slate-600 text-slate-300 text-[10px] font-black">City ${city.stopNumber} of 32</span>`);
 
     popoverEl.classList.remove('hidden');
     popoverEl.innerHTML = `
@@ -543,18 +629,23 @@ export function renderNhlAtlasMap(container, options = {}) {
               <span class="px-1.5 py-0.5 rounded bg-amber-400 text-slate-950 text-[10px] font-black">${escMap(city.code)}</span>
               <span class="text-xs sm:text-sm font-black text-white">${escMap(city.name)} ${escMap(city.team)}</span>
             </div>
-            <div class="text-[10px] font-bold text-slate-300 mt-0.5">Stop #${city.stopNumber} (${escMap(city.region)}) • Focus: ${escMap(city.focus)}</div>
+            <div class="text-[10px] font-bold text-slate-300 mt-0.5">City ${city.stopNumber} of 32 (${escMap(city.region)}) • ${escMap(city.focus)}</div>
           </div>
           <button type="button" id="btnCloseAtlasPopover" class="px-2 py-0.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-black cursor-pointer">✕</button>
         </div>
         <div>${statusPill}</div>
-        ${skaterPin ? `
-          <div class="p-2 rounded-xl bg-slate-900/95 border border-cyan-400/50 flex items-center gap-2.5" data-atlas-popover-skater="${escMap(skaterPin.pinId)}">
-            <div id="nhlAtlasPopoverSkaterPreview" class="w-16 h-24 rounded-lg bg-slate-950 border border-slate-800 flex items-center justify-center shrink-0 p-1"></div>
-            <div class="min-w-0 flex-1 space-y-0.5">
-              <div class="text-xs font-black text-cyan-200">${escMap(skaterPin.badgeText)}</div>
-              <div class="text-[10px] font-bold text-slate-300">Division: ${escMap(skaterPin.skaterData.divisionLabel || skaterPin.skaterData.ageGroup || '12U')}</div>
-              <div class="text-[10px] font-black text-emerald-300">Hockey IQ: ${Number(skaterPin.skaterData.iqScore || 0)}</div>
+        ${primaryPin ? `
+          <div class="p-2 rounded-xl bg-slate-950 border border-cyan-400/50 flex items-center gap-2.5" data-atlas-popover-skater="${escMap(primaryPin.pinId)}">
+            <div id="nhlAtlasPopoverSkaterPreview" class="w-16 h-24 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-center shrink-0 p-1"></div>
+            <div class="min-w-0 flex-1 space-y-1">
+              <div class="text-xs font-black text-cyan-200">${escMap(primaryPin.badgeText)}</div>
+              <div class="text-[10px] font-bold text-slate-300">Division: ${escMap(primaryPin.skaterData.divisionLabel || primaryPin.skaterData.ageGroup || '12U')}</div>
+              <div class="text-[10px] font-black text-emerald-300">Hockey IQ: ${Number(primaryPin.skaterData.iqScore || 0)}</div>
+              ${!primaryPin.isYou ? `
+                <button type="button" id="btnPopoverOpenScoutingCard" class="mt-1 px-2.5 py-1 rounded-lg bg-amber-400 hover:bg-amber-300 text-slate-950 text-[10px] font-black cursor-pointer">
+                  🔍 Scouting Card
+                </button>
+              ` : ''}
             </div>
           </div>
         ` : ''}
@@ -567,10 +658,21 @@ export function renderNhlAtlasMap(container, options = {}) {
       renderPopover();
     });
 
-    if (skaterPin) {
+    popoverEl.querySelector('#btnPopoverOpenScoutingCard')?.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      if (primaryPin && !primaryPin.isYou) {
+        openFriendScoutingCardModal(primaryPin.skaterData);
+      }
+    });
+
+    if (primaryPin) {
       const mount = popoverEl.querySelector('#nhlAtlasPopoverSkaterPreview');
       if (mount) {
-        renderCustomizableSkater(mount, skaterPin.skaterData, { angleDeg: 0, showSpinButton: false });
+        renderCustomizableSkater(mount, primaryPin.skaterData, {
+          angleDeg: 0,
+          showDragHint: false,
+          compactRear: true
+        });
       }
     }
   };
@@ -578,14 +680,10 @@ export function renderNhlAtlasMap(container, options = {}) {
   const renderPinsAndTransform = () => {
     clampPan();
     const invScale = 1 / zoom;
-    const borderStroke = (1.05 / Math.pow(zoom, 0.65)).toFixed(2);
 
     if (stageEl) {
       stageEl.setAttribute('transform', `translate(${panX.toFixed(1)}, ${panY.toFixed(1)}) scale(${zoom.toFixed(3)})`);
     }
-    if (canadaGroup) canadaGroup.setAttribute('stroke-width', borderStroke);
-    if (usGroup) usGroup.setAttribute('stroke-width', borderStroke);
-    if (lakesGroup) lakesGroup.setAttribute('stroke-width', borderStroke);
     if (zoomBadgeEl) {
       zoomBadgeEl.textContent = `${zoom.toFixed(1)}x`;
       zoomBadgeEl.setAttribute('data-atlas-zoom', zoom.toFixed(1));
@@ -602,32 +700,37 @@ export function renderNhlAtlasMap(container, options = {}) {
 
         const dotFill = isCurrent ? '#22d3ee' : (isConquered ? '#10b981' : '#0f172a');
         const dotStroke = isSelected ? '#facc15' : (isCurrent ? '#ffffff' : (isConquered ? '#6ee7b7' : '#38bdf8'));
-        const dotR = isCurrent ? 5.2 : (isSelected ? 5.0 : 3.8);
+        const dotR = isCurrent ? 5.4 : (isSelected ? 5.0 : 4.0);
 
         return `
           <g class="nhl-atlas-city-pin cursor-pointer" data-nhl-city-code="${city.code}" data-nhl-city-name="${escMap(city.name)}" transform="translate(${city.x}, ${city.y}) scale(${invScale.toFixed(4)})">
-            ${pl.needsLeader ? `<line x1="0" y1="0" x2="${pl.dx}" y2="${pl.dy}" stroke="rgba(125,211,252,0.55)" stroke-width="0.9"/>` : ''}
-            ${isCurrent ? `<circle cx="0" cy="0" r="9.5" fill="rgba(34,211,238,0.18)" stroke="#22d3ee" stroke-width="1.1" stroke-dasharray="2.5 2"/>` : ''}
-            <circle cx="0" cy="0" r="${dotR}" fill="${dotFill}" stroke="${dotStroke}" stroke-width="1.5"/>
+            ${pl.needsLeader ? `<line x1="0" y1="0" x2="${pl.dx}" y2="${pl.dy}" stroke="rgba(125,211,252,0.65)" stroke-width="1.0"/>` : ''}
+            ${isCurrent ? `<circle cx="0" cy="0" r="9.8" fill="rgba(34,211,238,0.22)" stroke="#22d3ee" stroke-width="1.2" stroke-dasharray="2.5 2"/>` : ''}
+            <circle cx="0" cy="0" r="${dotR}" fill="${dotFill}" stroke="${dotStroke}" stroke-width="1.6"/>
             <g data-city-label-box="${city.code}" transform="translate(${pl.dx}, ${pl.dy})">
-              <rect x="${-pl.pillW / 2}" y="${-pl.pillH / 2}" width="${pl.pillW}" height="${pl.pillH}" rx="3.5" fill="${isCurrent ? '#083344' : 'rgba(6,11,22,0.92)'}" stroke="${isCurrent ? '#22d3ee' : (isConquered ? '#10b981' : 'rgba(56,189,248,0.45)')}" stroke-width="0.9"/>
-              <text x="0" y="3" fill="${isCurrent ? '#67e8f9' : '#f1f5f9'}" font-family="Inter, Segoe UI, sans-serif" font-size="7.8" font-weight="900" text-anchor="middle">${escMap(pl.labelText)}</text>
+              <rect x="${-pl.pillW / 2}" y="${-pl.pillH / 2}" width="${pl.pillW}" height="${pl.pillH}" rx="3.5" fill="${isCurrent ? '#083344' : 'rgba(9,15,28,0.94)'}" stroke="${isCurrent ? '#22d3ee' : (isConquered ? '#10b981' : 'rgba(56,189,248,0.55)')}" stroke-width="0.95"/>
+              <text x="0" y="3" fill="${isCurrent ? '#67e8f9' : '#f8fafc'}" font-family="Inter, Segoe UI, sans-serif" font-size="7.8" font-weight="900" text-anchor="middle">${escMap(pl.labelText)}</text>
             </g>
           </g>
         `;
       }).join('');
 
-      const skatersSvg = skaterPins.map((sp, sIdx) => {
-        const offsetY = -22 - sIdx * 16;
-        const pillW = Math.max(58, sp.badgeText.length * 5.6 + 14);
+      const skatersSvg = skaterPins.map((sp) => {
+        const offsetY = -24 - (sp.stackIdx || 0) * 18;
+        const pillW = Math.max(62, sp.badgeText.length * 5.8 + 16);
         const borderCol = sp.isYou ? '#fbbf24' : '#34d399';
         const bgCol = sp.isYou ? '#451a03' : '#064e3b';
         const txtCol = sp.isYou ? '#fef08a' : '#a7f3d0';
         return `
-          <g class="nhl-atlas-skater-pin cursor-pointer" data-atlas-skater-pin="${escMap(sp.pinId)}" transform="translate(${sp.city.x}, ${sp.city.y}) scale(${invScale.toFixed(4)})">
-            <line x1="0" y1="-4" x2="0" y2="${offsetY + 7}" stroke="${borderCol}" stroke-width="1.6"/>
-            <rect x="${-pillW / 2}" y="${offsetY - 7}" width="${pillW}" height="15" rx="7.5" fill="${bgCol}" stroke="${borderCol}" stroke-width="1.4"/>
-            <text x="0" y="${offsetY + 3.2}" fill="${txtCol}" font-family="Inter, Segoe UI, sans-serif" font-size="8.2" font-weight="900" text-anchor="middle">${escMap(sp.badgeText)}</text>
+          <g
+            class="nhl-atlas-skater-pin cursor-pointer"
+            data-atlas-skater-pin="${escMap(sp.pinId)}"
+            data-atlas-is-friend="${sp.isYou ? 'false' : 'true'}"
+            transform="translate(${sp.city.x}, ${sp.city.y}) scale(${invScale.toFixed(4)})"
+          >
+            <line x1="0" y1="-4" x2="0" y2="${offsetY + 7}" stroke="${borderCol}" stroke-width="1.8"/>
+            <rect x="${-pillW / 2}" y="${offsetY - 8}" width="${pillW}" height="16" rx="8" fill="${bgCol}" stroke="${borderCol}" stroke-width="1.5"/>
+            <text x="0" y="${offsetY + 3.0}" fill="${txtCol}" font-family="Inter, Segoe UI, sans-serif" font-size="8.3" font-weight="900" text-anchor="middle">${escMap(sp.badgeText)}</text>
           </g>
         `;
       }).join('');
@@ -655,6 +758,10 @@ export function renderNhlAtlasMap(container, options = {}) {
           const pid = node.getAttribute('data-atlas-skater-pin');
           const foundSkater = skaterPins.find((p) => p.pinId === pid);
           if (!foundSkater) return;
+          if (!foundSkater.isYou) {
+            openFriendScoutingCardModal(foundSkater.skaterData);
+            return;
+          }
           selectedEntity = { type: 'skater', city: foundSkater.city, skaterPin: foundSkater };
           renderPinsAndTransform();
           renderPopover();
@@ -663,10 +770,9 @@ export function renderNhlAtlasMap(container, options = {}) {
     }
   };
 
-  const zoomAroundPoint = (nextZoom, focalSvgX = 500, focalSvgY = 280) => {
+  const zoomAroundPoint = (nextZoom, focalSvgX = 500, focalSvgY = 281) => {
     const clamped = Math.max(1.0, Math.min(4.0, Math.round(nextZoom * 100) / 100));
     if (Math.abs(clamped - zoom) < 0.001) return;
-    // Keep the geographic world point under `(focalSvgX, focalSvgY)` stationary
     const worldX = (focalSvgX - panX) / zoom;
     const worldY = (focalSvgY - panY) / zoom;
     zoom = clamped;
@@ -676,14 +782,13 @@ export function renderNhlAtlasMap(container, options = {}) {
   };
 
   root.querySelector('#btnAtlasZoomIn')?.addEventListener('click', () => {
-    // Default zoom focus leans gently toward the dense Great Lakes / East Coast corridor when at 1x
-    const fx = zoom < 1.2 ? 660 : 500;
-    const fy = zoom < 1.2 ? 250 : 280;
+    const fx = zoom < 1.2 ? 690 : 500;
+    const fy = zoom < 1.2 ? 255 : 281;
     zoomAroundPoint(zoom + 0.75, fx, fy);
   });
 
   root.querySelector('#btnAtlasZoomOut')?.addEventListener('click', () => {
-    zoomAroundPoint(zoom - 0.75, 500, 280);
+    zoomAroundPoint(zoom - 0.75, 500, 281);
   });
 
   root.querySelector('#btnAtlasZoomReset')?.addEventListener('click', () => {
@@ -693,7 +798,6 @@ export function renderNhlAtlasMap(container, options = {}) {
     renderPinsAndTransform();
   });
 
-  // Drag-Pan & Pinch-Zoom Pointer Handling
   const activePointers = new Map();
   let dragPrev = null;
   let pinchStartDist = null;
@@ -701,12 +805,12 @@ export function renderNhlAtlasMap(container, options = {}) {
   let wasPanned = false;
 
   const clientToSvgCoords = (clientX, clientY) => {
-    if (!svgEl) return [500, 280];
+    if (!svgEl) return [500, 281];
     const rect = svgEl.getBoundingClientRect();
-    if (!rect.width || !rect.height) return [500, 280];
+    if (!rect.width || !rect.height) return [500, 281];
     return [
       ((clientX - rect.left) / rect.width) * 1000,
-      ((clientY - rect.top) / rect.height) * 560
+      ((clientY - rect.top) / rect.height) * 562
     ];
   };
 
@@ -744,7 +848,7 @@ export function renderNhlAtlasMap(container, options = {}) {
         wasPanned = true;
         const rect = svgEl.getBoundingClientRect();
         const scaleSvgX = rect.width ? 1000 / rect.width : 1;
-        const scaleSvgY = rect.height ? 560 / rect.height : 1;
+        const scaleSvgY = rect.height ? 562 / rect.height : 1;
         panX += dxPx * scaleSvgX;
         panY += dyPx * scaleSvgY;
         dragPrev = { x: ev.clientX, y: ev.clientY };
@@ -777,7 +881,7 @@ export function renderNhlAtlasMap(container, options = {}) {
 
   const controller = {
     getZoom: () => zoom,
-    setZoom: (z, fx = 660, fy = 250) => zoomAroundPoint(z, fx, fy),
+    setZoom: (z, fx = 690, fy = 255) => zoomAroundPoint(z, fx, fy),
     resetView: () => {
       zoom = 1.0;
       panX = 0;
@@ -795,7 +899,12 @@ export function renderNhlAtlasMap(container, options = {}) {
 }
 
 const SynapzNhlAtlasMap = {
+  PAINTED_NORTH_AMERICA_MAP_URL,
   NHL_ATLAS_CITIES,
+  SAMPLE_TEAMMATES_ROSTER,
+  isSampleTeammatesPreviewEnabled,
+  getEffectiveClubhouseFriends,
+  openFriendScoutingCardModal,
   projectNorthAmericaLatLon,
   renderNhlAtlasMap
 };
@@ -803,6 +912,8 @@ const SynapzNhlAtlasMap = {
 if (typeof window !== 'undefined') {
   window.SynapzNhlAtlasMap = SynapzNhlAtlasMap;
   window.renderNhlAtlasMap = renderNhlAtlasMap;
+  window.openFriendScoutingCardModal = openFriendScoutingCardModal;
+  window.getEffectiveClubhouseFriends = getEffectiveClubhouseFriends;
 }
 
 export default SynapzNhlAtlasMap;

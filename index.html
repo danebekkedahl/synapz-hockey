@@ -9,7 +9,7 @@
   <meta name="apple-mobile-web-app-title" content="SYNAPZ HOCKEY" />
   <meta name="application-name" content="SYNAPZ HOCKEY" />
   <meta name="theme-color" content="#0d1829" />
-  <title>SYNAPZ HOCKEY v15.4.1 — Play. Learn. Dominate. (32-City Road to the Cup)</title>
+  <title>SYNAPZ HOCKEY v15.5 — Play. Learn. Dominate. (32-City Road to the Cup)</title>
   <script src="./engine/safari15_polyfill.js"></script>
   <script src="./engine/practice_stations_svg.js"></script>
   <link rel="manifest" href="manifest.json" />
@@ -291,7 +291,6 @@
     #onboardingWizardContainer,
     #fullAvatarStudioContainer,
     #trophyRoomModal > div,
-    #proShopModal > div,
     #teamManagerModal > div,
     #reportModal > div,
     #upgradeModal > div,
@@ -309,7 +308,6 @@
     #sandboxLoginModal,
     #loginModal,
     #trophyRoomModal,
-    #proShopModal,
     #teamManagerModal,
     #reportModal,
     #upgradeModal,
@@ -505,7 +503,11 @@
       }
       #slotSetupLiveSkaterPreview {
         width: 100% !important;
-        height: 148px !important;
+        height: 152px !important;
+        max-height: 152px !important;
+        min-height: 0 !important;
+        flex: 0 0 152px !important;
+        overflow: hidden !important;
       }
       #guidedSetupCutoutImg {
         height: clamp(78px, 11.5vh, 110px) !important;
@@ -517,7 +519,11 @@
     @media (min-width: 768px) {
       #slotSetupLiveSkaterPreview {
         width: 100% !important;
-        height: 248px !important;
+        height: 318px !important;
+        max-height: 318px !important;
+        min-height: 0 !important;
+        flex: 0 0 318px !important;
+        overflow: hidden !important;
       }
     }
 
@@ -553,7 +559,7 @@
     #sandboxLoginModal > div,
     #loginModal > div,
     #teamManagerModal > div,
-    #proShopModal > div,
+    #proShopRackOverlaySheet,
     #trophyRoomModal > div,
     #pricingAndPlansModal > div,
     #successStoriesModal > div,
@@ -808,28 +814,42 @@
     }
     .synapz-golden-gear-hotspot {
       position: absolute;
-      background: transparent;
-      border: 1.5px solid transparent;
+      -webkit-appearance: none !important;
+      appearance: none !important;
+      background: transparent !important;
+      border: none !important;
       border-radius: 0.6rem;
-      box-shadow: none;
+      box-shadow: none !important;
+      outline: none !important;
       cursor: pointer;
       padding: 0;
       margin: 0;
       z-index: 22;
-      transition: all 0.18s ease;
     }
+    #proShopRoomSceneCanvas .synapz-golden-gear-hotspot,
     #clubhouseRoomSceneCanvas .synapz-golden-gear-hotspot {
-      background: transparent;
-      border-color: transparent;
-      box-shadow: none;
-      outline: none;
+      -webkit-appearance: none !important;
+      appearance: none !important;
+      background: transparent !important;
+      border: none !important;
+      box-shadow: none !important;
+      outline: none !important;
     }
-    #clubhouseRoomSceneCanvas .synapz-golden-gear-hotspot:hover,
-    #clubhouseRoomSceneCanvas .synapz-golden-gear-hotspot:focus-visible,
+    body.synapz-show-hotspots #proShopRoomSceneCanvas .synapz-golden-gear-hotspot,
     body.synapz-show-hotspots #clubhouseRoomSceneCanvas .synapz-golden-gear-hotspot {
-      background: radial-gradient(ellipse at center, rgba(251, 191, 36, 0.22) 0%, transparent 74%) !important;
-      border-color: rgba(251, 191, 36, 0.85) !important;
-      box-shadow: 0 0 20px rgba(251, 191, 36, 0.55), inset 0 0 12px rgba(251, 191, 36, 0.25) !important;
+      background: transparent !important;
+      border: none !important;
+      box-shadow: none !important;
+      outline: 2px dashed rgba(251, 191, 36, 0.85) !important;
+      outline-offset: -2px;
+    }
+    @keyframes synapzAgentSpeakPulse {
+      0%, 100% { box-shadow: 0 0 0 2px #fbbf24, 0 0 14px rgba(251, 191, 36, 0.85); }
+      50% { box-shadow: 0 0 0 3.5px #fde047, 0 0 22px rgba(251, 191, 36, 1.0); }
+    }
+    #slotSetupStep2SpeakingAgentBadge[data-agent-speaking="true"] {
+      border-color: #fde047 !important;
+      animation: synapzAgentSpeakPulse 1.15s ease-in-out infinite;
     }
     /* SLICE 3.1: Permanent text banners over room illustrations strictly forbidden */
     .synapz-room-object-pin-label {
@@ -858,13 +878,11 @@
         overflow: hidden !important;
       }
     }
-    .synapz-golden-gear-hotspot:hover,
-    .synapz-golden-gear-hotspot:focus-visible,
-    body.synapz-show-hotspots .synapz-golden-gear-hotspot {
-      background: radial-gradient(ellipse at center, rgba(251, 191, 36, 0.24) 0%, rgba(212, 175, 55, 0.10) 72%, transparent 100%);
-      border-color: #fde047;
-      box-shadow: 0 0 24px rgba(251, 191, 36, 0.72), inset 0 0 14px rgba(251, 191, 36, 0.32);
-      transform: scale(1.01);
+    body.synapz-show-hotspots #lockerRoomSceneCanvas .synapz-golden-gear-hotspot,
+    body.synapz-show-hotspots #coachOfficeRoomSceneCanvas .synapz-golden-gear-hotspot {
+      background: transparent !important;
+      outline: 2px dashed #fde047 !important;
+      outline-offset: -2px;
     }
     .synapz-tour-spotlight-active {
       z-index: 46 !important;
@@ -3289,33 +3307,31 @@
       <button id="btnCloseProShop" type="button" class="hidden w-9 h-9 rounded-full bg-slate-950/90 border border-slate-600 text-slate-200 text-xs font-black items-center justify-center">✕</button>
     </div>
 
-    <!-- Pure 16:9 HD Pro Shop Picture Stage (Zero Permanent Text Banners; Warm-Gold Hover/Focus Glow) -->
+    <!-- Pure 16:9 HD Pro Shop Picture Stage (4 Clean 100% Transparent Invisible Tap Zones Over Painted Fixtures; Zero Black Capsules or Try-On Floor Button!) -->
     <div id="proShopRoomSceneCanvas" class="synapz-pure-room-stage">
       <img loading="lazy" decoding="async" id="proShopRoomSceneImg" src="assets/rooms/room-pro-shop.jpg" alt="SYNAPZ PRO SHOP Walk-In Store" class="synapz-room-bg-img" />
 
-      <!-- 1. Left Illuminated Stick Wall -->
-      <button id="proShopHotspotSticks" type="button" data-shop-fixture="Stick" aria-label="Stick Rack" title="Stick Rack" class="synapz-golden-gear-hotspot" style="left: 0.5%; top: 13.0%; width: 30.0%; height: 78.0%;"></button>
+      <!-- 1. Left Stick Rack -> Sticks Tab -->
+      <button id="proShopHotspotSticks" type="button" data-shop-fixture="Stick" aria-label="Left Stick Rack" class="synapz-golden-gear-hotspot" style="left: 0.5%; top: 12.0%; width: 30.0%; height: 80.0%; background: transparent !important; border: none !important; box-shadow: none !important;"></button>
 
-      <!-- 2. Helmet & Bucket Shelves -->
-      <button id="proShopHotspotHelmets" type="button" data-shop-fixture="Visor" aria-label="Helmet Wall" title="Helmets &amp; Visors" class="synapz-golden-gear-hotspot" style="left: 33.5%; top: 25.5%; width: 16.8%; height: 48.5%;"></button>
+      <!-- 2. Back-Left Helmet Wall -> Helmets & Visors Tab -->
+      <button id="proShopHotspotHelmets" type="button" data-shop-fixture="Visor" aria-label="Back-Left Helmet Wall" class="synapz-golden-gear-hotspot" style="left: 33.2%; top: 24.5%; width: 17.8%; height: 50.0%; background: transparent !important; border: none !important; box-shadow: none !important;"></button>
 
-      <!-- 3. Center Glove Showcase -->
-      <button id="proShopHotspotGloves" type="button" data-shop-fixture="Gloves" aria-label="Gloves" title="Gloves" class="synapz-golden-gear-hotspot" style="left: 39.5%; top: 55.0%; width: 29.5%; height: 39.0%;"></button>
+      <!-- 3. Center Display Counter -> Gloves / Jerseys Tab -->
+      <button id="proShopHotspotGloves" type="button" data-shop-fixture="Gloves" aria-label="Center Display Counter" class="synapz-golden-gear-hotspot" style="left: 39.2%; top: 55.0%; width: 30.0%; height: 39.5%; background: transparent !important; border: none !important; box-shadow: none !important;"></button>
 
-      <!-- 4. Try-On Floor / Visor Alcove -->
-      <button id="proShopHotspotShowcaseCounter" type="button" data-shop-fixture="Visor" aria-label="Try-On Floor" title="360° Try-On Floor" class="synapz-golden-gear-hotspot" style="left: 72.0%; top: 29.5%; width: 15.5%; height: 52.0%;"></button>
-
-      <!-- 5. Right Illuminated Skate Wall -->
-      <button id="proShopHotspotSkates" type="button" data-shop-fixture="Skates" aria-label="Skate Wall" title="Skate Wall" class="synapz-golden-gear-hotspot" style="left: 88.5%; top: 18.0%; width: 11.2%; height: 76.0%;"></button>
+      <!-- 4. Right Skate Wall -> Skates Tab -->
+      <button id="proShopHotspotSkates" type="button" data-shop-fixture="Skates" aria-label="Right Skate Wall" class="synapz-golden-gear-hotspot" style="left: 80.0%; top: 14.0%; width: 19.5%; height: 82.0%; background: transparent !important; border: none !important; box-shadow: none !important;"></button>
     </div>
 
-    <!-- Floating Rack Overlay Drawer (Single Live 360° Try-On Skater + Streamlined Gear Cards; Zero "Go to Locker Room Bag"!) -->
-    <div id="proShopRackOverlaySheet" class="hidden fixed inset-x-2.5 bottom-2.5 sm:inset-x-auto sm:w-[94vw] sm:max-w-5xl max-h-[84dvh] overflow-y-auto z-50 rounded-2xl bg-slate-950/96 border-2 border-amber-400/80 p-3.5 shadow-2xl space-y-2.5 backdrop-blur-xl">
+    <!-- Floating Rack Overlay Drawer (Single Live Custom Skater + Painted 75/25 Gear Cards) -->
+    <div id="proShopRackOverlaySheet" class="hidden fixed inset-x-2.5 bottom-2.5 sm:inset-x-auto sm:w-[94vw] sm:max-w-5xl max-h-[84dvh] overflow-y-auto z-50 rounded-2xl bg-[#0b1324]/97 border-2 border-amber-400/80 p-3.5 shadow-2xl space-y-2.5 backdrop-blur-xl">
       <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-2">
         <div id="proShopCategoryTabsBar" class="flex flex-wrap items-center gap-1.5">
           <button type="button" id="btnWallStick" data-shopcat="Stick" data-shop-cat="Stick" class="shop-cat-btn px-3 py-1.5 rounded-xl text-xs font-black border border-slate-700 bg-slate-900 text-slate-200 inline-flex items-center gap-1.5 cursor-pointer">Sticks</button>
           <button type="button" id="btnWallVisor" data-shopcat="Visor" data-shop-cat="Visor" class="shop-cat-btn px-3 py-1.5 rounded-xl text-xs font-black border border-slate-700 bg-slate-900 text-slate-200 inline-flex items-center gap-1.5 cursor-pointer">Helmets &amp; Visors</button>
           <button type="button" id="btnWallGloves" data-shopcat="Gloves" data-shop-cat="Gloves" class="shop-cat-btn px-3 py-1.5 rounded-xl text-xs font-black border border-cyan-300 bg-cyan-500 text-slate-950 inline-flex items-center gap-1.5 cursor-pointer">Gloves</button>
+          <button type="button" id="btnWallJersey" data-shopcat="Jersey" data-shop-cat="Jersey" class="shop-cat-btn px-3 py-1.5 rounded-xl text-xs font-black border border-slate-700 bg-slate-900 text-slate-200 inline-flex items-center gap-1.5 cursor-pointer">Jerseys</button>
           <button type="button" id="btnWallSkates" data-shopcat="Skates" data-shop-cat="Skates" class="shop-cat-btn px-3 py-1.5 rounded-xl text-xs font-black border border-slate-700 bg-slate-900 text-slate-200 inline-flex items-center gap-1.5 cursor-pointer">Skates</button>
         </div>
         <div class="flex items-center gap-1.5">
@@ -3326,13 +3342,12 @@
       <div id="proShopEquipmentBagToast" class="hidden p-2.5 rounded-xl bg-emerald-500/20 border border-emerald-400 text-emerald-200 text-xs font-black flex flex-wrap items-center justify-between gap-2"></div>
 
       <div id="proShopInteractiveDrawer" class="grid grid-cols-1 md:grid-cols-12 gap-3 items-start">
-        <!-- SINGLE LARGE LIVE 360° CUSTOM SKATER FLOOR STAGE (Zero Twin CURRENT/TRY-ON Mini Static Boxes!) -->
+        <!-- SINGLE LARGE LIVE PAINTED 75/25 SKATER STAGE (Pure Finger-Drag Spin, Zero Spin Buttons / Degree Labels!) -->
         <div id="proShopTryOnAvatarPreviewBox" class="md:col-span-4 bg-slate-900/95 border border-amber-400/60 rounded-2xl p-3 flex flex-col items-center gap-2">
           <div class="w-full flex items-center justify-between text-[10px] font-black text-amber-300">
-            <span id="shopPreviewBanner">Live 360° Skater Floor</span>
-            <span id="shopSpinAngleBadge" class="text-cyan-300">Front (0°)</span>
+            <span id="shopPreviewBanner">Live Painted Skater Preview</span>
           </div>
-          <div id="proShopTryOnAvatarCanvas" class="w-full h-56 sm:h-64 rounded-xl bg-slate-950/90 border border-slate-800 flex items-center justify-center p-2">
+          <div id="proShopTryOnAvatarCanvas" class="w-full h-60 sm:h-68 rounded-xl bg-slate-950/90 border border-slate-800 flex items-center justify-center p-2" style="height: 268px;">
             <div id="shop3dAvatarSvgWrap" class="w-full h-full flex items-center justify-center"></div>
           </div>
           <div id="proShopTryingOnPill" class="w-full px-2.5 py-1 rounded-xl bg-slate-950 border border-cyan-400/55 text-[11px] font-black text-cyan-200 text-center" style="white-space:normal;">
@@ -3340,9 +3355,6 @@
           </div>
           <div id="shopPreviewItemName" class="hidden"></div>
           <button id="btnBuyPreviewedItemNow" type="button" class="hidden w-full py-2 px-3 rounded-xl bg-gradient-to-r from-amber-400 to-emerald-400 text-slate-950 text-xs font-black shadow cursor-pointer"></button>
-          <div class="flex items-center gap-1.5 w-full">
-            <button id="btnFlipShopBack" type="button" class="flex-1 py-1.5 px-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-cyan-400/50 text-cyan-200 text-[11px] font-black cursor-pointer">🔄 Flip Front / Back</button>
-          </div>
           <button id="btnClearShopPreview" type="button" class="hidden w-full py-1.5 px-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-amber-400/55 text-amber-200 text-[11px] font-black cursor-pointer">↺ Reset to Equipped</button>
           <div class="hidden">
             <button id="btnShopPreviewBlackout" type="button">Blackout</button>
@@ -4172,7 +4184,7 @@
             Info
           </button>
         </div>
-        <div id="synapzAppBuildVersionBadge" class="text-[10px] font-bold text-slate-500 tracking-wider select-none">SYNAPZ HOCKEY v15.4.1</div>
+        <div id="synapzAppBuildVersionBadge" class="text-[10px] font-bold text-slate-500 tracking-wider select-none">SYNAPZ HOCKEY v15.5</div>
       </div>
 
       <!-- ================================================================= -->
@@ -4183,7 +4195,7 @@
           <button id="btnBackFromInfoToScreen1" type="button" class="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-xs font-black text-cyan-300">
             ← Back
           </button>
-          <span class="text-sm font-black text-white uppercase tracking-wider">Info Hub • v15.4.1</span>
+          <span class="text-sm font-black text-white uppercase tracking-wider">Info Hub • v15.5</span>
         </div>
 
         <!-- 3 Clean Info Tabs: Contact, Support, FAQ -->
@@ -4405,8 +4417,8 @@
       </div>
 
       <!-- ================================================================= -->
-      <!-- SCREEN 1A-4-SETUP — v15.0 2-STEP ZERO-SCROLL PLAYER SETUP         -->
-      <!-- Step 1: Choose Your Guide -> Step 2: Build Your Skater -> Lobby!  -->
+      <!-- SCREEN 1A-4-SETUP — v15.5 2-STEP ZERO-SCROLL PLAYER SETUP         -->
+      <!-- Step 1: Choose Your Agent -> Step 2: Build Your Skater -> Lobby!  -->
       <!-- ================================================================= -->
       <div id="entryScreen1A4SlotSetup" data-entry-screen="1A-4-SETUP" class="hidden flex-col gap-2 text-left relative">
         <div class="flex items-center justify-between border-b border-slate-800 pb-1.5 relative z-[70]">
@@ -4414,14 +4426,14 @@
             ← Log Out
           </button>
           <h2 id="slotSetupHeaderTitle" class="text-xs sm:text-sm font-black text-white">Player Profile Setup</h2>
-          <button id="btnSlotSetupHeaderSpeak" type="button" class="px-2.5 py-1 rounded-xl bg-slate-900 hover:bg-slate-800 border border-cyan-400/55 text-[11px] font-black text-cyan-200 cursor-pointer" title="Hear Step Instructions">
-            🔊 Audio Guide
+          <button id="btnSlotSetupHeaderSpeak" type="button" class="px-2.5 py-1 rounded-xl bg-slate-900 hover:bg-slate-800 border border-cyan-400/55 text-[11px] font-black text-cyan-200 cursor-pointer" title="Hear Agent Instructions">
+            🔊 Hear Agent
           </button>
         </div>
 
         <!-- 2-Step Indicator Pills -->
         <div id="slotSetupStepPillsBar" class="grid grid-cols-2 gap-1.5 text-center relative z-[70]">
-          <div id="slotStepPill1" class="py-1 px-2 rounded-lg bg-cyan-400 text-slate-950 text-[10px] font-black">1. Choose Your Guide</div>
+          <div id="slotStepPill1" class="py-1 px-2 rounded-lg bg-cyan-400 text-slate-950 text-[10px] font-black">1. Choose Your Agent</div>
           <div id="slotStepPill2" class="py-1 px-2 rounded-lg bg-slate-900 border border-slate-700 text-slate-400 text-[10px] font-bold">2. Build Your Skater</div>
           <div id="slotStepPill3" class="hidden"></div>
         </div>
@@ -4434,11 +4446,11 @@
         <input id="slotSetupThemeColorHex" type="hidden" value="#0284c7" />
         <input id="slotSetupExperienceLevel" type="hidden" value="Beginner" />
 
-        <!-- STEP 1: CHOOSE YOUR GUIDE (9 PORTRAIT CARDS, GUIDE NAME + 2-3 WORD STYLE TAG ONLY, ZERO BOTTOM QUOTE/HEAR BOX!) -->
+        <!-- STEP 1: CHOOSE YOUR AGENT (9 PORTRAIT CARDS, AGENT NAME + 2-3 WORD STYLE TAG ONLY) -->
         <div id="slotSetupStep1PickAgent" class="space-y-2">
           <div class="text-center">
-            <div class="text-xs sm:text-sm font-black text-cyan-300">Step 1: Choose Your Guide</div>
-            <p class="text-[11px] text-slate-300 font-semibold">Tap any guide portrait to hear their voice—any skater can team up with any guide!</p>
+            <div class="text-xs sm:text-sm font-black text-cyan-300">Step 1: Choose Your Agent</div>
+            <p class="text-[11px] text-slate-300 font-semibold">Tap any Agent portrait to hear their voice—any skater can team up with any Agent!</p>
           </div>
           <div id="slotSetupStep1AgentsGrid" class="grid grid-cols-3 gap-2 place-items-center py-0.5"></div>
           <button id="btnSlotStep1ContinueWithAgent" type="button" class="w-full py-2.5 px-4 rounded-2xl bg-gradient-to-r from-cyan-400 to-emerald-400 hover:from-cyan-300 hover:to-emerald-300 text-slate-950 text-xs sm:text-sm font-black shadow-lg cursor-pointer">
@@ -4447,20 +4459,31 @@
         </div>
 
         <!-- STEP 2: BUILD YOUR SKATER (2-COLUMN ZERO-SCROLL VIEWPORT-FITTED GRID ON IPAD LANDSCAPE!) -->
-        <div id="slotSetupStep2StockAvatar" class="hidden" style="max-height: calc(100vh - 80px); max-height: calc(100dvh - 80px);">
-          <div id="slotSetupStep2AvatarCard" class="p-2.5 sm:p-3 rounded-2xl bg-slate-950/95 border border-cyan-400/60 grid grid-cols-1 md:grid-cols-12 gap-3 items-stretch">
-            <!-- LEFT COLUMN: Real Painted 75/25 High-DPI Canvas Skater Stage + Front/Back Flip -->
-            <div class="md:col-span-5 flex flex-col justify-between gap-1.5 p-2 rounded-xl bg-slate-900/90 border border-slate-800">
-              <div class="flex items-center justify-between gap-1.5">
+        <div id="slotSetupStep2StockAvatar" class="hidden">
+          <div id="slotSetupStep2AvatarCard" class="p-2.5 sm:p-3 rounded-2xl bg-slate-950/95 border border-cyan-400/60 grid grid-cols-1 md:grid-cols-12 gap-2.5 items-stretch">
+            <!-- LEFT COLUMN: Real Painted 75/25 High-DPI Canvas Skater Stage + Bottom-Left 56px Speaking Agent Portrait Badge -->
+            <div id="slotSetupLeftPreviewPanel" class="relative md:col-span-5 min-h-0 overflow-hidden flex flex-col justify-between gap-1 p-2 rounded-xl bg-slate-900/90 border border-slate-800">
+              <div class="flex items-center justify-between gap-1.5 shrink-0">
                 <button id="btnSlotStep2BackTo1" type="button" class="px-2.5 py-1 rounded-lg bg-slate-950 hover:bg-slate-800 border border-slate-700 text-slate-200 text-[10px] font-black cursor-pointer">
-                  ← Guides
+                  ← Agents
                 </button>
-                <button id="btnSlotSetupFlipPreview" type="button" class="px-2.5 py-1 rounded-lg bg-slate-950 hover:bg-slate-800 border border-cyan-400/60 text-cyan-200 text-[10px] font-black cursor-pointer">
-                  🔄 Flip Front / Back
-                </button>
+                <span id="slotSetupChosenAgentPill" class="px-2 py-0.5 rounded-full bg-slate-950 border border-amber-400/60 text-amber-300 text-[9.5px] font-black">🎙️ Agent Leo</span>
               </div>
-              <div id="slotSetupLiveSkaterPreview" class="w-full h-56 md:h-64 flex items-center justify-center" style="width: 100%; height: 248px; display: flex; align-items: center; justify-content: center;"></div>
-              <div class="text-[10px] font-bold text-slate-400 text-center">Drag left/right or tap Flip Front / Back to inspect front &amp; back</div>
+              <div id="slotSetupLiveSkaterPreview" class="w-full min-h-0 overflow-hidden flex items-center justify-center" style="width: 100%; height: 318px; max-height: 318px; display: flex; align-items: center; justify-content: center;"></div>
+              <!-- Crisp 56px Circular Speaking Agent Portrait Badge (Adds 0px of Vertical Height!) -->
+              <button
+                id="slotSetupStep2SpeakingAgentBadge"
+                type="button"
+                data-speaking-agent-id="agent-leo"
+                data-agent-speaking="false"
+                title="Tap to replay Agent instructions"
+                aria-label="Chosen Agent Portrait"
+                style="position: absolute; bottom: 12px; left: 12px; width: 56px; height: 56px; z-index: 32; border-radius: 9999px; overflow: hidden; background: #0b1324; border: 2.5px solid #fbbf24; padding: 0; margin: 0;"
+                class="shadow-xl cursor-pointer flex items-center justify-center"
+              >
+                <img id="slotSetupStep2SpeakingAgentImg" src="assets/agents/agent-leo.png" alt="Chosen Agent" style="width: 100%; height: 100%; object-fit: cover; object-position: 50% 10%;" class="pointer-events-none select-none" />
+                <span id="slotSetupStep2SpeakingAgentName" style="position: absolute; bottom: 0; left: 0; right: 0; background: rgba(11, 19, 36, 0.90); color: #fde047; font-size: 8.5px; font-weight: 900; line-height: 1.15; padding: 1px 2px; text-align: center;">Leo</span>
+              </button>
               <div id="slotSetupStep2StockAvatarsGrid" class="hidden"></div>
             </div>
 
@@ -4542,7 +4565,7 @@
                   <button type="button" data-skater-art-pill="avatar-female-3" class="slot-skater-art-pill py-1 px-1 rounded-lg bg-slate-900 border border-slate-700 text-slate-200 text-[9.5px] font-bold cursor-pointer" title="Skater 7 • Wavy Flow">Skater 7</button>
                   <button type="button" data-skater-art-pill="avatar-female-4" class="slot-skater-art-pill py-1 px-1 rounded-lg bg-slate-900 border border-slate-700 text-slate-200 text-[9.5px] font-bold cursor-pointer" title="Skater 8 • Twin Braids">Skater 8</button>
                 </div>
-                <!-- Hidden legacy compatibility hooks mapped cleanly to Skater 1..8 -->
+                <!-- Compact Hair Style + Skin Tone Row Mapped Cleanly Across Painted 75/25 Skaters -->
                 <select id="slotSetupHairStyle" class="hidden" aria-hidden="true">
                   <option value="flow" selected>Flow</option>
                   <option value="short">Short</option>
@@ -4552,19 +4575,27 @@
                   <option value="braids">Braids</option>
                   <option value="buzz">Buzz</option>
                 </select>
-                <div id="slotSetupHairStylePills" class="hidden" aria-hidden="true">
-                  <button type="button" data-hair-style-pill="flow" class="slot-hairstyle-pill"></button>
-                  <button type="button" data-hair-style-pill="short" class="slot-hairstyle-pill"></button>
-                  <button type="button" data-hair-style-pill="ponytail" class="slot-hairstyle-pill"></button>
-                  <button type="button" data-hair-style-pill="curly" class="slot-hairstyle-pill"></button>
-                  <button type="button" data-hair-style-pill="mohawk" class="slot-hairstyle-pill"></button>
-                  <button type="button" data-hair-style-pill="braids" class="slot-hairstyle-pill"></button>
-                </div>
-                <div id="slotSetupSkinTonePills" class="hidden" aria-hidden="true">
-                  <button type="button" data-skin-hex="#fde68a" class="slot-skin-pill"></button>
-                  <button type="button" data-skin-hex="#fdba74" class="slot-skin-pill"></button>
-                  <button type="button" data-skin-hex="#d97706" class="slot-skin-pill"></button>
-                  <button type="button" data-skin-hex="#78350f" class="slot-skin-pill"></button>
+                <div class="grid grid-cols-12 gap-2 items-end mt-1">
+                  <div class="col-span-8">
+                    <label class="block text-[9.5px] font-black uppercase text-slate-300 mb-0.5">Hair Style</label>
+                    <div id="slotSetupHairStylePills" class="grid grid-cols-6 gap-1">
+                      <button type="button" data-hair-style-pill="flow" class="slot-hairstyle-pill py-1 px-0.5 rounded-lg bg-cyan-400 text-slate-950 text-[9px] font-black cursor-pointer shadow">Flow</button>
+                      <button type="button" data-hair-style-pill="short" class="slot-hairstyle-pill py-1 px-0.5 rounded-lg bg-slate-900 border border-slate-700 text-slate-200 text-[9px] font-bold cursor-pointer">Short</button>
+                      <button type="button" data-hair-style-pill="ponytail" class="slot-hairstyle-pill py-1 px-0.5 rounded-lg bg-slate-900 border border-slate-700 text-slate-200 text-[9px] font-bold cursor-pointer">Pony</button>
+                      <button type="button" data-hair-style-pill="curly" class="slot-hairstyle-pill py-1 px-0.5 rounded-lg bg-slate-900 border border-slate-700 text-slate-200 text-[9px] font-bold cursor-pointer">Curly</button>
+                      <button type="button" data-hair-style-pill="mohawk" class="slot-hairstyle-pill py-1 px-0.5 rounded-lg bg-slate-900 border border-slate-700 text-slate-200 text-[9px] font-bold cursor-pointer">Mohawk</button>
+                      <button type="button" data-hair-style-pill="braids" class="slot-hairstyle-pill py-1 px-0.5 rounded-lg bg-slate-900 border border-slate-700 text-slate-200 text-[9px] font-bold cursor-pointer">Braids</button>
+                    </div>
+                  </div>
+                  <div class="col-span-4">
+                    <label class="block text-[9.5px] font-black uppercase text-slate-300 mb-0.5">Skin Tone</label>
+                    <div id="slotSetupSkinTonePills" class="grid grid-cols-4 gap-1">
+                      <button type="button" data-skin-hex="#fde68a" title="Fair" aria-label="Skin Tone Fair" class="slot-skin-pill h-6 rounded-lg border border-white/45 cursor-pointer" style="background:#fde68a;"></button>
+                      <button type="button" data-skin-hex="#fdba74" title="Peach" aria-label="Skin Tone Peach" class="slot-skin-pill h-6 rounded-lg border border-white/45 cursor-pointer" style="background:#fdba74;"></button>
+                      <button type="button" data-skin-hex="#d97706" title="Tan" aria-label="Skin Tone Tan" class="slot-skin-pill h-6 rounded-lg border border-white/45 cursor-pointer" style="background:#c67d43;"></button>
+                      <button type="button" data-skin-hex="#78350f" title="Deep" aria-label="Skin Tone Deep" class="slot-skin-pill h-6 rounded-lg border border-white/45 cursor-pointer" style="background:#6b3e26;"></button>
+                    </div>
+                  </div>
                 </div>
               </div>
 
@@ -5556,7 +5587,7 @@
     // =========================================================================
     // NATURAL VOICE & WEB AUDIO ENGINE (Picks Neural/Natural Voice + Neon Green Ice Highlights)
     // =========================================================================
-    window.SYNAPZ_CACHE_NAME = 'synapz-hockey-v15.4.1-live-and-8law-constitution';
+    window.SYNAPZ_CACHE_NAME = 'synapz-hockey-v15.5-player-walkthrough-polish';
 
     // =========================================================================
     // SECTION 39 (v12.3) + SECTION 46 (v13.2) + SECTION 47 (v13.4):
@@ -18239,16 +18270,92 @@
     }
     window.equipOwnedGearLoadout = equipOwnedGearLoadout;
 
-    // S4-A / B4-S11-A: Live Side-by-Side "Try It On My Skater" Preview Inside Walk-In Pro Shop
+    // v15.5 0ms Instant "Try On" Preview Inside Walk-In Pro Shop (In-Place DOM Sync — Never Requires 2 Taps!)
+    function resolveShopItemById(itemOrId) {
+      if (!itemOrId) return null;
+      if (typeof itemOrId === 'object') return itemOrId;
+      const foundSku = PRO_SHOP_ITEMS.find(i => i.id === itemOrId);
+      if (foundSku) return foundSku;
+      const swatches = window.SynapzGearArt7525?.STARTER_JERSEY_SWATCHES || [];
+      const sw = swatches.find(s => s.id === itemOrId);
+      if (sw) return { id: sw.id, category: 'Jersey', name: sw.name, hex: sw.hex, color: sw.hex, accentColor: sw.accent, cost: 0, isJerseySwatch: true };
+      return null;
+    }
+
+    function syncProShopTryOnBannerAndCardsInPlace() {
+      const prof = getActiveProfile();
+      const tryingOnPill = document.getElementById('proShopTryingOnPill');
+      const resetPreviewBtn = document.getElementById('btnClearShopPreview');
+      const buyPreviewBtn = document.getElementById('btnBuyPreviewedItemNow');
+
+      if (state.shopPreviewItem) {
+        const pvItem = state.shopPreviewItem;
+        const pvOwned = Boolean(pvItem.isJerseySwatch || (prof.ownedGear || []).includes(pvItem.id));
+        if (tryingOnPill) {
+          tryingOnPill.textContent = `Trying On: ${pvItem.name}`;
+          tryingOnPill.className = 'w-full px-2.5 py-1.5 rounded-xl bg-cyan-950/90 border border-cyan-300 text-[11px] font-black text-cyan-200 text-center';
+        }
+        if (resetPreviewBtn) resetPreviewBtn.classList.remove('hidden');
+        if (buyPreviewBtn) {
+          buyPreviewBtn.classList.remove('hidden');
+          buyPreviewBtn.textContent = pvOwned
+            ? `✅ Equip ${pvItem.name}`
+            : `💰 Buy & Equip (${pvItem.cost} Puck Bucks)`;
+          buyPreviewBtn.onclick = () => {
+            if (pvItem.isJerseySwatch) {
+              prof.jerseyColor = pvItem.hex || pvItem.color;
+              state.shopPreviewItem = null;
+              SoundFX.playGoalHorn();
+              saveProgress();
+              renderProShopModal();
+              if (typeof renderSynapzLockerRoomModal === 'function') renderSynapzLockerRoomModal();
+              return;
+            }
+            purchaseProShopItemIntoBag(prof, pvItem);
+          };
+        }
+      } else {
+        if (tryingOnPill) {
+          tryingOnPill.textContent = `Showing Equipped Loadout • ${prof.name}${prof.jerseyNumber !== '' && prof.jerseyNumber != null ? ` #${prof.jerseyNumber}` : ''}`;
+          tryingOnPill.className = 'w-full px-2.5 py-1.5 rounded-xl bg-slate-950 border border-slate-700 text-[11px] font-bold text-slate-300 text-center';
+        }
+        if (resetPreviewBtn) resetPreviewBtn.classList.add('hidden');
+        if (buyPreviewBtn) buyPreviewBtn.classList.add('hidden');
+      }
+
+      const activePreviewId = state.shopPreviewItem ? state.shopPreviewItem.id : null;
+      document.querySelectorAll('#proShopItemsGrid [data-pro-shop-item-id]').forEach((cardEl) => {
+        const cid = cardEl.getAttribute('data-pro-shop-item-id');
+        const isPrev = Boolean(activePreviewId && cid === activePreviewId);
+        const isEq = cardEl.getAttribute('data-item-equipped') === 'true';
+        cardEl.className = `p-3 rounded-2xl border-2 flex flex-col justify-between gap-2.5 transition ${
+          isEq
+            ? 'bg-emerald-950/35 border-emerald-400 shadow-[0_0_16px_rgba(16,185,129,0.2)]'
+            : isPrev
+            ? 'bg-cyan-950/45 border-cyan-300 shadow-[0_0_16px_rgba(34,211,238,0.28)]'
+            : 'bg-slate-950/95 border-slate-800 hover:border-cyan-400/50'
+        }`;
+        const tryBtn = cardEl.querySelector('.btn-try-on-skater');
+        if (tryBtn) {
+          tryBtn.className = `btn-try-on-skater px-3 py-1.5 rounded-xl text-[11px] font-black border transition cursor-pointer ${
+            isPrev
+              ? 'bg-cyan-400 text-slate-950 border-cyan-200'
+              : 'bg-slate-900 hover:bg-slate-800 text-cyan-200 border-cyan-500/45'
+          }`;
+          tryBtn.textContent = isPrev ? 'Trying On ✓' : 'Try On';
+        }
+      });
+    }
+
     function previewProShopItemOnSkater(itemOrId) {
-      const item = typeof itemOrId === 'string'
-        ? PRO_SHOP_ITEMS.find(i => i.id === itemOrId)
-        : itemOrId;
+      const item = resolveShopItemById(itemOrId);
       if (!item) return null;
       SoundFX.playTap();
       state.shopPreviewItem = item;
+      state.shopSpinAngle = 0;
       state.avatarSpinAngle = 0;
-      renderProShopModal();
+      updateShop3dStage();
+      syncProShopTryOnBannerAndCardsInPlace();
       return item;
     }
     window.previewProShopItemOnSkater = previewProShopItemOnSkater;
@@ -18257,10 +18364,8 @@
       const wrap = document.getElementById('shop3dAvatarSvgWrap');
       if (!wrap) return;
       const prof = getActiveProfile();
-      const previewObj = typeof state.shopPreviewItem === 'string'
-        ? PRO_SHOP_ITEMS.find(i => i.id === state.shopPreviewItem)
-        : state.shopPreviewItem;
-      const angle = state.shopSpinAngle != null ? state.shopSpinAngle : (state.avatarSpinAngle || 0);
+      const previewObj = resolveShopItemById(state.shopPreviewItem);
+      const angle = state.shopSpinAngle != null ? state.shopSpinAngle : 0;
 
       if (window.renderCustomizableSkater) {
         window.renderCustomizableSkater(wrap, prof, {
@@ -18268,26 +18373,14 @@
           previewItem: previewObj || null,
           showSpinButton: false,
           showLoadoutDock: true,
+          showGearOnSkater: true,
           onAngleChange: (nextA) => {
             state.shopSpinAngle = nextA;
-            const normNext = Math.round(((nextA % 360) + 360) % 360);
-            const bEl = document.getElementById('shopSpinAngleBadge');
-            if (bEl) {
-              const isBk = normNext >= 95 && normNext <= 265;
-              bEl.textContent = `${isBk ? 'Back' : 'Front'} (${normNext}°)`;
-            }
           }
         });
       } else {
         wrap.innerHTML = renderYoungHockeyPlayerAvatar(prof, angle, previewObj);
       }
-
-      const normA = Math.round(((angle % 360) + 360) % 360);
-      const isBack = normA >= 115 && normA <= 245;
-      const badge = document.getElementById('shopSpinAngleBadge');
-      if (badge) badge.textContent = `${isBack ? 'Back' : 'Front'} (${normA}°)`;
-      const slider = document.getElementById('sliderShopSpin');
-      if (slider && document.activeElement !== slider) slider.value = String(normA);
     }
 
     function purchaseProShopItemIntoBag(prof, item) {
@@ -18347,12 +18440,13 @@
         { id: 'btnWallStick', cat: 'Stick', label: 'Sticks' },
         { id: 'btnWallVisor', cat: 'Visor', label: 'Helmets & Visors' },
         { id: 'btnWallGloves', cat: 'Gloves', label: 'Gloves' },
+        { id: 'btnWallJersey', cat: 'Jersey', label: 'Jerseys' },
         { id: 'btnWallSkates', cat: 'Skates', label: 'Skates' }
       ];
       tabDefs.forEach(td => {
         const el = document.getElementById(td.id);
-        if (el && !el.dataset.v151SvgHydrated) {
-          el.dataset.v151SvgHydrated = '1';
+        if (el && !el.dataset.v155PaintedTab) {
+          el.dataset.v155PaintedTab = '1';
           el.innerHTML = `${window.SynapzGearArt7525.renderGearCategoryIconSvg(td.cat, 18)}<span>${td.label}</span>`;
         }
       });
@@ -18367,38 +18461,9 @@
       if (balEl) balEl.textContent = `💰 ${state.puckBucks} Puck Bucks`;
 
       if (typeof state.shopPreviewItem === 'string') {
-        state.shopPreviewItem = PRO_SHOP_ITEMS.find(i => i.id === state.shopPreviewItem) || null;
+        state.shopPreviewItem = resolveShopItemById(state.shopPreviewItem);
       }
       updateShop3dStage();
-
-      const tryingOnPill = document.getElementById('proShopTryingOnPill');
-      const resetPreviewBtn = document.getElementById('btnClearShopPreview');
-      const buyPreviewBtn = document.getElementById('btnBuyPreviewedItemNow');
-      if (state.shopPreviewItem) {
-        const pvItem = state.shopPreviewItem;
-        const pvOwned = (prof.ownedGear || []).includes(pvItem.id);
-        if (tryingOnPill) {
-          tryingOnPill.textContent = `Trying On: ${pvItem.name}`;
-          tryingOnPill.className = 'w-full px-2.5 py-1.5 rounded-xl bg-cyan-950/90 border border-cyan-300 text-[11px] font-black text-cyan-200 text-center';
-        }
-        if (resetPreviewBtn) resetPreviewBtn.classList.remove('hidden');
-        if (buyPreviewBtn) {
-          buyPreviewBtn.classList.remove('hidden');
-          buyPreviewBtn.textContent = pvOwned
-            ? `✅ Equip ${pvItem.name}`
-            : `💰 Buy & Equip (${pvItem.cost} Puck Bucks)`;
-          buyPreviewBtn.onclick = () => {
-            purchaseProShopItemIntoBag(prof, pvItem);
-          };
-        }
-      } else {
-        if (tryingOnPill) {
-          tryingOnPill.textContent = `Showing Equipped Loadout • ${prof.name}${prof.jerseyNumber !== '' && prof.jerseyNumber != null ? ` #${prof.jerseyNumber}` : ''}`;
-          tryingOnPill.className = 'w-full px-2.5 py-1.5 rounded-xl bg-slate-950 border border-slate-700 text-[11px] font-bold text-slate-300 text-center';
-        }
-        if (resetPreviewBtn) resetPreviewBtn.classList.add('hidden');
-        if (buyPreviewBtn) buyPreviewBtn.classList.add('hidden');
-      }
 
       if (!state.shopCategoryFilter || state.shopCategoryFilter === 'all') {
         state.shopCategoryFilter = 'Gloves';
@@ -18416,9 +18481,21 @@
         b.classList.toggle('text-slate-200', !active);
       });
 
-      const wallItems = PRO_SHOP_ITEMS.filter(i =>
-        i.category === activeCat || (activeCat === 'Visor' && (i.category === 'Visor' || i.category === 'Helmet'))
-      );
+      const wallItems = activeCat === 'Jersey'
+        ? (window.SynapzGearArt7525?.STARTER_JERSEY_SWATCHES || []).map((sw) => ({
+            id: sw.id,
+            category: 'Jersey',
+            name: sw.name,
+            tierLabel: sw.tierLabel || 'Team Kit',
+            cost: 0,
+            hex: sw.hex,
+            color: sw.hex,
+            accentColor: sw.accent,
+            isJerseySwatch: true
+          }))
+        : PRO_SHOP_ITEMS.filter(i =>
+            i.category === activeCat || (activeCat === 'Visor' && (i.category === 'Visor' || i.category === 'Helmet'))
+          );
 
       const promoSlot = document.getElementById('proShopBrandShowcaseRack');
       if (promoSlot) {
@@ -18431,14 +18508,17 @@
       grid.innerHTML = '';
 
       wallItems.forEach(item => {
-        const owned = (prof.ownedGear || []).includes(item.id);
-        const equipped =
-          (item.category === 'Gloves' && prof.equippedGlovesId === item.id) ||
-          (item.category === 'Stick' && prof.equippedStickId === item.id) ||
-          (item.category === 'Skates' && (prof.equippedSkatesId === item.id || prof.equippedSkates === item.id)) ||
-          (item.category === 'Helmet' && prof.equippedHelmetId === item.id) ||
-          (item.category === 'Visor' && prof.equippedVisorId === item.id);
-        const isPreviewing = state.shopPreviewItem && state.shopPreviewItem.id === item.id;
+        const owned = Boolean(item.isJerseySwatch || (prof.ownedGear || []).includes(item.id));
+        const equipped = item.isJerseySwatch
+          ? String(prof.jerseyColor || '').toLowerCase() === String(item.hex || item.color || '').toLowerCase()
+          : (
+              (item.category === 'Gloves' && prof.equippedGlovesId === item.id) ||
+              (item.category === 'Stick' && prof.equippedStickId === item.id) ||
+              (item.category === 'Skates' && (prof.equippedSkatesId === item.id || prof.equippedSkates === item.id)) ||
+              (item.category === 'Helmet' && prof.equippedHelmetId === item.id) ||
+              (item.category === 'Visor' && prof.equippedVisorId === item.id)
+            );
+        const isPreviewing = Boolean(state.shopPreviewItem && state.shopPreviewItem.id === item.id);
         const tierText = item.tierLabel || (window.SynapzGearArt7525?.resolveItemTierLabel?.(item)) || 'Pro Stock';
 
         const card = document.createElement('div');
@@ -18446,10 +18526,11 @@
           equipped
             ? 'bg-emerald-950/35 border-emerald-400 shadow-[0_0_16px_rgba(16,185,129,0.2)]'
             : isPreviewing
-            ? 'bg-cyan-950/40 border-cyan-300 shadow-[0_0_16px_rgba(34,211,238,0.25)]'
+            ? 'bg-cyan-950/45 border-cyan-300 shadow-[0_0_16px_rgba(34,211,238,0.28)]'
             : 'bg-slate-950/95 border-slate-800 hover:border-cyan-400/50'
         }`;
         card.setAttribute('data-pro-shop-item-id', item.id);
+        card.setAttribute('data-item-equipped', equipped ? 'true' : 'false');
         card.innerHTML = `
           <div class="pro-shop-card-preview-trigger flex items-center gap-3 cursor-pointer">
             ${renderProShopWallProductSvg(item)}
@@ -18479,7 +18560,19 @@
             : 'bg-slate-900 hover:bg-slate-800 text-cyan-200 border-cyan-500/45'
         }`;
         prevBtn.textContent = isPreviewing ? 'Trying On ✓' : 'Try On';
-        prevBtn.addEventListener('click', () => previewProShopItemOnSkater(item));
+        let handledOnPointerDown = false;
+        prevBtn.addEventListener('pointerdown', (ev) => {
+          if (ev.button && ev.button !== 0) return;
+          ev.preventDefault();
+          handledOnPointerDown = true;
+          previewProShopItemOnSkater(item);
+          setTimeout(() => { handledOnPointerDown = false; }, 220);
+        });
+        prevBtn.addEventListener('click', (ev) => {
+          ev.preventDefault();
+          if (handledOnPointerDown) return;
+          previewProShopItemOnSkater(item);
+        });
 
         const btn = document.createElement('button');
         btn.type = 'button';
@@ -18495,6 +18588,15 @@
         }`;
         btn.textContent = equipped ? 'Equipped ✅' : (owned ? 'Equip' : 'Buy & Equip');
         btn.addEventListener('click', () => {
+          if (item.isJerseySwatch) {
+            prof.jerseyColor = item.hex || item.color;
+            state.shopPreviewItem = null;
+            SoundFX.playGoalHorn();
+            saveProgress();
+            renderProShopModal();
+            if (typeof renderSynapzLockerRoomModal === 'function') renderSynapzLockerRoomModal();
+            return;
+          }
           purchaseProShopItemIntoBag(prof, item);
         });
 
@@ -18503,6 +18605,8 @@
         card.appendChild(actionsWrap);
         grid.appendChild(card);
       });
+
+      syncProShopTryOnBannerAndCardsInPlace();
     }
     window.renderProShopModal = renderProShopModal;
 
@@ -19824,13 +19928,12 @@
     });
 
     // Pro Gear Shop 3D Avatar Spin & Category Filters
-    document.getElementById('btnToggleShopSpin').addEventListener('click', () => {
+    document.getElementById('btnToggleShopSpin')?.addEventListener('click', () => {
       toggleAvatarAutoSpin('shop');
     });
-    document.getElementById('btnFlipShopBack').addEventListener('click', () => {
+    document.getElementById('btnFlipShopBack')?.addEventListener('click', () => {
       SoundFX.playTap();
       state.shopAutoSpin = false;
-      document.getElementById('btnToggleShopSpin').textContent = '⏸ Auto-Spin: PAUSED';
       const norm = ((state.shopSpinAngle % 360) + 360) % 360;
       state.shopSpinAngle = (norm > 90 && norm < 270) ? 0 : 180;
       renderProShopModal();
@@ -23337,7 +23440,7 @@
 
       grid.innerHTML = agents.map(ag => {
         const isSel = ag.id === selectedId;
-        const styleTag = ag.styleTag || ag.tierLabel || 'Game Guide';
+        const styleTag = ag.styleTag || ag.tierLabel || 'Hockey Agent';
         return `
           <button type="button" data-step1-agent-id="${ag.id}" class="slot-step1-cutout-btn p-2 rounded-2xl border-2 flex flex-col items-center gap-1 cursor-pointer transition-all ${
             isSel
@@ -23400,6 +23503,7 @@
       state.draftSkater.stockAvatarId = found.id;
       state.draftSkater.avatarType = found.gender;
       state.draftSkater.hairStyle = found.defaultHair || 'flow';
+      state.draftSkater.skinToneExplicit = false;
       const stockInp = document.getElementById('slotSetupStockAvatarId');
       const avInp = document.getElementById('slotSetupAvatarType');
       const hsSel = document.getElementById('slotSetupHairStyle');
@@ -23411,6 +23515,15 @@
         b.className = active
           ? 'slot-skater-art-pill py-1 px-1 rounded-lg bg-cyan-400 text-slate-950 text-[9.5px] font-black shadow cursor-pointer'
           : 'slot-skater-art-pill py-1 px-1 rounded-lg bg-slate-900 border border-slate-700 text-slate-200 text-[9.5px] font-bold cursor-pointer';
+      });
+      document.querySelectorAll('[data-hair-style-pill]').forEach(b => {
+        const active = (b.getAttribute('data-hair-style-pill') || '') === state.draftSkater.hairStyle;
+        b.className = active
+          ? 'slot-hairstyle-pill py-1 px-0.5 rounded-lg bg-cyan-400 text-slate-950 text-[9px] font-black cursor-pointer shadow'
+          : 'slot-hairstyle-pill py-1 px-0.5 rounded-lg bg-slate-900 border border-slate-700 text-slate-200 text-[9px] font-bold cursor-pointer';
+      });
+      document.querySelectorAll('.slot-skin-pill').forEach(b => {
+        b.classList.remove('ring-2', 'ring-cyan-300');
       });
     }
     window.syncSlotPaintedSkaterPillsUI = syncSlotPaintedSkaterPillsUI;
@@ -23435,10 +23548,35 @@
       document.querySelectorAll('[data-hair-style-pill]').forEach(b => {
         const active = (b.getAttribute('data-hair-style-pill') || '') === clean;
         b.className = active
-          ? 'slot-hairstyle-pill py-1 px-1 rounded-lg bg-cyan-400 text-slate-950 text-[10px] font-black cursor-pointer shadow'
-          : 'slot-hairstyle-pill py-1 px-1 rounded-lg bg-slate-900 border border-slate-700 text-slate-200 text-[10px] font-bold cursor-pointer';
+          ? 'slot-hairstyle-pill py-1 px-0.5 rounded-lg bg-cyan-400 text-slate-950 text-[9px] font-black cursor-pointer shadow'
+          : 'slot-hairstyle-pill py-1 px-0.5 rounded-lg bg-slate-900 border border-slate-700 text-slate-200 text-[9px] font-bold cursor-pointer';
       });
     }
+
+    function syncStep2ChosenAgentPortraitBadge(isSpeaking = false) {
+      const agId = document.getElementById('slotSetupAgentSelect')?.value || state.draftSkater.agentId || 'agent-leo';
+      const agents = window.SYNAPZ_PLAYER_AGENTS || [];
+      const ag = agents.find(a => a.id === agId) || agents[0] || { id: 'agent-leo', name: 'Leo', img: 'assets/cutouts/agent-leo.png' };
+      const badgeBtn = document.getElementById('slotSetupStep2SpeakingAgentBadge');
+      const imgEl = document.getElementById('slotSetupStep2SpeakingAgentImg');
+      const nameEl = document.getElementById('slotSetupStep2SpeakingAgentName');
+      const topPill = document.getElementById('slotSetupChosenAgentPill');
+      const portraitSrc = `assets/agents/${ag.id}.png`;
+
+      if (badgeBtn) {
+        badgeBtn.setAttribute('data-speaking-agent-id', ag.id);
+        badgeBtn.setAttribute('data-agent-speaking', isSpeaking ? 'true' : 'false');
+        badgeBtn.setAttribute('aria-label', `Agent ${ag.name}`);
+      }
+      if (imgEl) {
+        imgEl.src = portraitSrc;
+        imgEl.alt = ag.name;
+        imgEl.onerror = () => { imgEl.onerror = null; imgEl.src = ag.img || 'assets/cutouts/agent-leo.png'; };
+      }
+      if (nameEl) nameEl.textContent = ag.name;
+      if (topPill) topPill.textContent = `🎙️ Agent ${ag.name}`;
+    }
+    window.syncStep2ChosenAgentPortraitBadge = syncStep2ChosenAgentPortraitBadge;
 
     function updateSlotSetupLivePreview() {
       const wrap = document.getElementById('slotSetupLiveSkaterPreview');
@@ -23465,6 +23603,7 @@
         hairStyle,
         hairColor,
         skinTone,
+        skinToneExplicit: Boolean(state.draftSkater.skinToneExplicit),
         jerseyColor: themeHex,
         equippedGloves: themeHex,
         equippedHelmet: themeHex === '#eab308' ? '#111827' : themeHex,
@@ -23513,7 +23652,7 @@
         renderSlotSetupStep1Agents();
         if (speakCue && typeof window.speakClean === 'function') {
           const agId = document.getElementById('slotSetupAgentSelect')?.value || state.draftSkater.agentId || 'agent-leo';
-          window.speakClean('Step 1: Choose Your Guide. Tap any guide portrait to preview their voice, then tap Continue.', {
+          window.speakClean('Step 1: Choose Your Agent. Tap any Agent portrait to preview their voice, then tap Continue.', {
             characterId: agId,
             context: 'guided_setup_voice',
             explicitUserAction: true
@@ -23522,13 +23661,15 @@
       } else {
         state.slotSetupPreviewAngle = 0;
         renderSlotSetupStep2StockAvatars();
+        syncStep2ChosenAgentPortraitBadge(Boolean(speakCue));
         updateSlotSetupLivePreview();
         if (speakCue && typeof window.speakClean === 'function') {
           const agId = document.getElementById('slotSetupAgentSelect')?.value || state.draftSkater.agentId || 'agent-leo';
           window.speakClean('Step 2: Build Your Skater. Enter your Skater Name and Jersey Number, pick your Age Band, Position, Hair, and Colors, then tap Enter the Rink.', {
             characterId: agId,
             context: 'guided_setup_voice',
-            explicitUserAction: true
+            explicitUserAction: true,
+            onEnd: () => { syncStep2ChosenAgentPortraitBadge(false); }
           });
         }
       }
@@ -23568,7 +23709,7 @@
         b.classList.toggle('ring-cyan-300', active);
       });
       document.querySelectorAll('.slot-skin-pill').forEach(b => {
-        const active = (b.getAttribute('data-skin-hex') || '').toLowerCase() === sh.toLowerCase();
+        const active = Boolean(state.draftSkater.skinToneExplicit) && (b.getAttribute('data-skin-hex') || '').toLowerCase() === sh.toLowerCase();
         b.classList.toggle('ring-2', active);
         b.classList.toggle('ring-cyan-300', active);
       });
@@ -23760,6 +23901,7 @@
         hairStyle,
         hairColor,
         skinTone,
+        skinToneExplicit: Boolean(state.draftSkater.skinToneExplicit),
         jerseyColor: themeHex,
         equippedGloves: existing?.equippedGloves || themeHex,
         equippedHelmet: existing?.equippedHelmet || (themeHex === '#eab308' ? '#111827' : themeHex),
@@ -24373,10 +24515,31 @@
         SoundFX.playTap();
         const agId = document.getElementById('slotSetupAgentSelect')?.value || state.draftSkater.agentId || 'agent-leo';
         const line = state.slotSetupStep === 1
-          ? 'Step 1: Choose Your Guide. Tap any guide portrait to preview their voice, then tap Continue.'
+          ? 'Step 1: Choose Your Agent. Tap any Agent portrait to preview their voice, then tap Continue.'
           : 'Step 2: Build Your Skater. Enter your Skater Name and Jersey Number, pick your Age Band, Position, Hair, and Colors, then tap Enter the Rink.';
+        if (state.slotSetupStep === 2) syncStep2ChosenAgentPortraitBadge(true);
         if (typeof window.speakClean === 'function') {
-          window.speakClean(line, { characterId: agId, context: 'guided_setup_voice', explicitUserAction: true });
+          window.speakClean(line, {
+            characterId: agId,
+            context: 'guided_setup_voice',
+            explicitUserAction: true,
+            onEnd: () => { if (state.slotSetupStep === 2) syncStep2ChosenAgentPortraitBadge(false); }
+          });
+        }
+      });
+
+      on('slotSetupStep2SpeakingAgentBadge', (ev) => {
+        if (ev) { ev.preventDefault(); ev.stopPropagation(); }
+        SoundFX.playTap();
+        const agId = document.getElementById('slotSetupAgentSelect')?.value || state.draftSkater.agentId || 'agent-leo';
+        syncStep2ChosenAgentPortraitBadge(true);
+        if (typeof window.speakClean === 'function') {
+          window.speakClean('Step 2: Build Your Skater. Enter your Skater Name and Jersey Number, pick your Age Band, Position, Hair, and Colors, then tap Enter the Rink.', {
+            characterId: agId,
+            context: 'guided_setup_voice',
+            explicitUserAction: true,
+            onEnd: () => { syncStep2ChosenAgentPortraitBadge(false); }
+          });
         }
       });
 
@@ -24709,6 +24872,7 @@
           SoundFX.playTap();
           const hex = btn.getAttribute('data-skin-hex') || '#fdba74';
           const curHair = state.draftSkater.hairColor || document.getElementById('slotSetupHairColorHex')?.value || '#78350f';
+          state.draftSkater.skinToneExplicit = true;
           syncSlotHairAndSkinPillsUI(curHair, hex);
           updateSlotSetupLivePreview();
         });
@@ -27140,7 +27304,7 @@
         name: 'Maya',
         styleTag: 'High-Energy Spark',
         tierLabel: 'High-Energy Spark',
-        roleTitle: 'Fast-Paced Rink Guide',
+        roleTitle: 'Fast-Paced Rink Agent',
         img: 'assets/cutouts/agent-maya.png',
         pitch: 1.12,
         rate: 1.02,
@@ -27152,7 +27316,7 @@
         name: 'Jalen',
         styleTag: 'Fast-Break Playmaker',
         tierLabel: 'Fast-Break Playmaker',
-        roleTitle: 'Speed & Transition Guide',
+        roleTitle: 'Speed & Transition Agent',
         img: 'assets/cutouts/agent-jalen.png',
         pitch: 1.06,
         rate: 1.02,
@@ -27164,7 +27328,7 @@
         name: 'Chloe',
         styleTag: 'Clutch Leader',
         tierLabel: 'Clutch Leader',
-        roleTitle: 'Big-Game Locker Guide',
+        roleTitle: 'Big-Game Locker Agent',
         img: 'assets/cutouts/agent-chloe.png',
         pitch: 1.06,
         rate: 1.01,
@@ -27176,7 +27340,7 @@
         name: 'Sofia',
         styleTag: 'Ice Vision Tactician',
         tierLabel: 'Ice Vision Tactician',
-        roleTitle: 'Smart Passing & Angles Guide',
+        roleTitle: 'Smart Passing & Angles Agent',
         img: 'assets/cutouts/agent-sofia.png',
         pitch: 1.04,
         rate: 1.0,
@@ -27188,7 +27352,7 @@
         name: 'Leo',
         styleTag: 'Two-Way Strategist',
         tierLabel: 'Two-Way Strategist',
-        roleTitle: '200-Foot Hockey Guide',
+        roleTitle: '200-Foot Hockey Agent',
         img: 'assets/cutouts/agent-leo.png',
         pitch: 1.0,
         rate: 1.01,
@@ -27200,7 +27364,7 @@
         name: 'Marcus',
         styleTag: 'Pro Film Strategist',
         tierLabel: 'Pro Film Strategist',
-        roleTitle: 'Championship Habits Guide',
+        roleTitle: 'Championship Habits Agent',
         img: 'assets/cutouts/agent-marcus.png',
         pitch: 0.94,
         rate: 0.99,
@@ -27210,9 +27374,9 @@
       {
         id: 'agent-priya',
         name: 'Priya',
-        styleTag: 'Precision IQ Guide',
-        tierLabel: 'Precision IQ Guide',
-        roleTitle: 'Zone Mastery Specialist',
+        styleTag: 'Precision IQ Specialist',
+        tierLabel: 'Precision IQ Specialist',
+        roleTitle: 'Zone Mastery Agent',
         img: 'assets/cutouts/agent-priya.png',
         pitch: 1.0,
         rate: 1.0,
@@ -27224,7 +27388,7 @@
         name: 'Ryan',
         styleTag: 'Calm Pro Mentor',
         tierLabel: 'Calm Pro Mentor',
-        roleTitle: 'Steady Bench & Rink Guide',
+        roleTitle: 'Steady Bench & Rink Agent',
         img: 'assets/cutouts/agent-ryan.png',
         pitch: 0.96,
         rate: 1.0,
@@ -27236,7 +27400,7 @@
         name: 'Claire',
         styleTag: 'All-Ice Tactician',
         tierLabel: 'All-Ice Tactician',
-        roleTitle: 'Smart Reads & Gear Guide',
+        roleTitle: 'Smart Reads & Gear Agent',
         img: 'assets/cutouts/agent-claire.png',
         pitch: 1.03,
         rate: 1.0,
@@ -27253,7 +27417,7 @@
       'agent-sofia': { id: 'agent-sofia', name: 'Sofia', role: 'Ice Vision Tactician', basePath: 'assets/audio/voices/agent-sofia', pitch: 1.04, rate: 1.0, gender: 'female' },
       'agent-leo': { id: 'agent-leo', name: 'Leo', role: 'Two-Way Strategist', basePath: 'assets/audio/voices/agent-leo', pitch: 1.0, rate: 1.01, gender: 'male' },
       'agent-marcus': { id: 'agent-marcus', name: 'Marcus', role: 'Pro Film Strategist', basePath: 'assets/audio/voices/agent-marcus', pitch: 0.94, rate: 0.99, gender: 'male' },
-      'agent-priya': { id: 'agent-priya', name: 'Priya', role: 'Precision IQ Guide', basePath: 'assets/audio/voices/agent-priya', pitch: 1.0, rate: 1.0, gender: 'female' },
+      'agent-priya': { id: 'agent-priya', name: 'Priya', role: 'Precision IQ Specialist', basePath: 'assets/audio/voices/agent-priya', pitch: 1.0, rate: 1.0, gender: 'female' },
       'agent-ryan': { id: 'agent-ryan', name: 'Ryan', role: 'Calm Pro Mentor', basePath: 'assets/audio/voices/agent-ryan', pitch: 0.96, rate: 1.0, gender: 'male' },
       'agent-claire': { id: 'agent-claire', name: 'Claire', role: 'All-Ice Tactician', basePath: 'assets/audio/voices/agent-claire', pitch: 1.03, rate: 1.0, gender: 'female' },
       'coach-bob': { id: 'coach-bob', name: 'Coach Bob', role: 'On-Ice Lessons Coach', basePath: 'assets/audio/voices/coach-bob', pitch: 0.95, rate: 0.99, gender: 'male' },
@@ -27626,9 +27790,9 @@
       locker: {
         speaker: 'active-agent',
         steps: [
-          { targetId: 'lockerStanding3dAvatarStage', badge: '1/3 Your 3D Skater Stall', text: 'Here is your full-body 3D skater standing in your stall! Every stick, glove, helmet, or skate you equip updates live on you.' },
-          { targetId: 'lockerHotspotDuffleBag', badge: '2/3 Equipment Bag', text: 'Tap your Equipment Bag or any stall shelf to try on and equip gear you unlock in the Walk-In Pro Shop.' },
-          { targetId: 'btnLockerOpenEditProfile', badge: '3/3 Edit Profile & Jersey', text: 'Tap Edit Profile anytime to change your hair, jersey number, camera view, or voice settings.' }
+          { targetId: 'lockerStanding3dAvatarStage', badge: '1/3 Your Skater Stall', text: 'Here is your painted skater standing in your stall! Drag across your skater to spin, and every piece of gear you equip updates live.' },
+          { targetId: 'lockerHotspotDuffleBag', badge: '2/3 Equipment Bag', text: 'Tap your Equipment Bag or any stall shelf to equip sticks, gloves, visors, and skates you unlock in the Pro Shop.' },
+          { targetId: 'btnLockerOpenEditProfile', badge: '3/3 Edit Profile & Jersey', text: 'Tap Edit Profile anytime to update your hair, jersey number, camera view, or voice settings.' }
         ]
       },
       playerCoachOffice: {
@@ -27643,17 +27807,17 @@
       proShop: {
         speaker: 'active-agent',
         steps: [
-          { targetId: 'proShopHotspotSticks', badge: '1/4 Stick Rack', text: 'Tap the left Stick Rack to browse pro carbon twigs and spend your earned Puck Bucks.' },
-          { targetId: 'proShopHotspotGloves', badge: '2/4 Gloves', text: 'Tap the center Gloves showcase to check out pro 4-roll mitts and custom colorways.' },
-          { targetId: 'proShopHotspotSkates', badge: '3/4 Skate & Helmet Wall', text: 'Tap the Skate Wall or Helmet shelves to unlock custom steel runners, buckets, and tinted visors.' },
-          { targetId: 'proShopHotspotShowcaseCounter', badge: '4/4 Live 360° Try-On Floor', text: 'Tap Try On on any item to dress your live 360° skater before buying!' }
+          { targetId: 'proShopHotspotSticks', badge: '1/4 Left Stick Rack', text: 'Tap the left Stick Rack to browse pro carbon twigs and spend your earned Puck Bucks.' },
+          { targetId: 'proShopHotspotHelmets', badge: '2/4 Back-Left Helmet Wall', text: 'Tap the Helmet Wall to try on pro buckets, tinted iridium visors, and chrome cages.' },
+          { targetId: 'proShopHotspotGloves', badge: '3/4 Center Display Counter', text: 'Tap the Center Display Counter to check out pro 4-roll gloves and team sweaters.' },
+          { targetId: 'proShopHotspotSkates', badge: '4/4 Right Skate Wall', text: 'Tap the Right Skate Wall to unlock custom steel runners and carbon skates!' }
         ]
       },
       clubhouse: {
         speaker: 'active-agent',
         steps: [
-          { targetId: 'clubhouseHotspotFriendsWall', badge: '1/3 Friends Wall', text: 'Tap the Friends Wall on the left to swap Friend Codes with teammates and see mutual friend milestones.' },
-          { targetId: 'clubhouseHotspotMapRaceScreen', badge: '2/3 Center TV — Live Showdown', text: 'Tap the Center TV to host or join a 4-Digit PIN Live Team Showdown!' },
+          { targetId: 'clubhouseHotspotFriendsWall', badge: '1/3 Friends & Family Wall', text: 'Tap the Friends & Family Wall on the left to swap Friend Codes with teammates and open their Scouting Cards.' },
+          { targetId: 'clubhouseHotspotMapRaceScreen', badge: '2/3 Head-to-Head Map Race', text: 'Tap the Center Head-to-Head Map Race screen to explore the 32-City NHL Tour and scout teammates on the map!' },
           { targetId: 'clubhouseHotspotTrophyCase', badge: '3/3 3-Shelf Trophy Case', text: 'Tap the Trophy Case on the right to inspect your Division Silver Cups, Mastery Medals, and 32-City Patches!' }
         ]
       },
@@ -27733,6 +27897,59 @@
     }
     window.finishRoomFirstVisitTour = finishRoomFirstVisitTour;
 
+    function dockRoomTourOverlayBesideTarget(overlay, targetEl) {
+      if (!overlay) return;
+      overlay.style.left = '';
+      overlay.style.right = '';
+      overlay.style.top = '';
+      overlay.style.bottom = '18px';
+      overlay.style.maxWidth = '460px';
+
+      if (!targetEl || typeof window === 'undefined') {
+        overlay.style.left = '18px';
+        return;
+      }
+      const vw = window.innerWidth || 1180;
+      const vh = window.innerHeight || 820;
+      const r = targetEl.getBoundingClientRect();
+      if (!r || r.width <= 0 || r.height <= 0) {
+        overlay.style.left = '18px';
+        return;
+      }
+
+      const spaceRight = vw - r.right - 28;
+      const spaceLeft = r.left - 28;
+      const spaceBelow = vh - r.bottom - 24;
+
+      // 1) If target is on the left (e.g. Locker 1/3 Skater Stall, Pro Shop Stick Rack, Clubhouse Friends Wall), dock cleanly to its RIGHT!
+      if (r.left + r.width * 0.5 <= vw * 0.5 && spaceRight >= 280) {
+        overlay.style.left = `${Math.round(r.right + 18)}px`;
+        overlay.style.right = 'auto';
+        overlay.style.maxWidth = `${Math.min(480, Math.round(spaceRight))}px`;
+        overlay.style.bottom = '20px';
+        return;
+      }
+      // 2) If target is on the right (e.g. Equipment Bag, Trophy Case, Skate Wall), dock cleanly to its LEFT!
+      if (spaceLeft >= 280) {
+        overlay.style.left = '18px';
+        overlay.style.right = 'auto';
+        overlay.style.maxWidth = `${Math.min(480, Math.round(spaceLeft))}px`;
+        overlay.style.bottom = '20px';
+        return;
+      }
+      // 3) If target is in upper/center screen (e.g. Clubhouse Map Race Screen or Top Header button), dock cleanly below it!
+      if (spaceBelow >= 175) {
+        overlay.style.left = `${Math.max(18, Math.round((vw - 460) * 0.5))}px`;
+        overlay.style.right = 'auto';
+        overlay.style.maxWidth = '460px';
+        overlay.style.bottom = '16px';
+        return;
+      }
+      overlay.style.left = '18px';
+      overlay.style.top = '64px';
+      overlay.style.bottom = 'auto';
+    }
+
     function applyRoomFirstVisitStep(roomKey, idx = 0) {
       const cfg = ROOM_FIRST_VISIT_TOURS[roomKey];
       if (!cfg) return;
@@ -27754,11 +27971,12 @@
       const ag = getActivePlayerAgent();
       const speakerId = cfg.speaker === 'coach-al' ? 'coach-al' : (ag ? ag.id : 'agent-leo');
       const speakerImg = speakerId === 'coach-al' ? 'assets/cutouts/coach-al.png' : (ag ? ag.img : 'assets/cutouts/agent-leo.png');
-      const speakerAlt = speakerId === 'coach-al' ? 'Coach Al' : (ag ? ag.name : 'Guide');
+      const speakerAlt = speakerId === 'coach-al' ? 'Coach Al' : (ag ? ag.name : 'Agent');
 
       document.getElementById('synapzMuteSafeCaptionRibbon')?.classList.add('hidden');
       document.getElementById('synapzUniversalCharSpeechOverlay')?.classList.add('hidden');
       document.getElementById('synapzPersistentCharCircleBtn')?.classList.add('hidden');
+      document.getElementById('lockerFirstTimeTourOverlay')?.classList.add('hidden');
 
       if (imgEl) {
         imgEl.src = speakerImg;
@@ -27767,8 +27985,12 @@
       if (badgeEl) badgeEl.textContent = step.badge;
       if (textEl) textEl.textContent = step.text;
       if (nextBtn) nextBtn.textContent = isLast ? 'Done ✓' : 'Next ➔';
-      document.getElementById(step.targetId)?.classList.add('synapz-tour-spotlight-active');
-      if (overlay) overlay.classList.remove('hidden');
+      const targetEl = document.getElementById(step.targetId);
+      if (targetEl) targetEl.classList.add('synapz-tour-spotlight-active');
+      if (overlay) {
+        overlay.classList.remove('hidden');
+        dockRoomTourOverlayBesideTarget(overlay, targetEl);
+      }
 
       playCharacterVoice(speakerId, `${roomKey}_tour_${idx + 1}`, step.text, { suppressOverlay: true });
     }
@@ -27868,7 +28090,7 @@
       const audQuote = document.getElementById('auditionAgentGreetingText');
       if (audQuote) audQuote.textContent = `"${auditionAgent.greeting}"`;
       const hireBtn = document.getElementById('btnConfirmHirePlayerAgent');
-      if (hireBtn) hireBtn.textContent = `✅ Choose ${auditionAgent.name} as My Guide`;
+      if (hireBtn) hireBtn.textContent = `✅ Choose ${auditionAgent.name} as My Agent`;
     }
 
     // Station 2: Pure Full-Screen Locker Room (Zero "Toolbox" / Zero "brass stall nameplate" copy; 1st-Visit Tour Only!)
@@ -28078,8 +28300,8 @@
       document.querySelectorAll('.locker-cat-btn').forEach((btn) => {
         const rawCat = btn.dataset.lockerCat || 'Bag';
         const normCat = rawCat === 'Sticks' ? 'Stick' : (rawCat === 'Helmets' ? 'Visor' : rawCat);
-        if (!btn.dataset.v151SvgHydrated) {
-          btn.dataset.v151SvgHydrated = '1';
+        if (!btn.dataset.v155PaintedTab) {
+          btn.dataset.v155PaintedTab = '1';
           const lbl = tabLabels[normCat] || normCat;
           btn.innerHTML = `${window.SynapzGearArt7525.renderGearCategoryIconSvg(normCat, 17)}<span>${lbl}</span>`;
         }
@@ -28096,21 +28318,16 @@
         if (window.renderCustomizableSkater) {
           window.renderCustomizableSkater(floorStage, prof, {
             angleDeg: state.lockerSpinAngle || 0,
-            showSpinButton: true,
+            showSpinButton: false,
             showLoadoutDock: true,
-            spinButtonId: 'btnLockerStallSpin360',
+            showGearOnSkater: true,
+            onDockSlotClick: (sl) => {
+              const catMap = { visor: 'Visor', stick: 'Stick', gloves: 'Gloves', skates: 'Skates' };
+              openLockerEquipmentBagDrawer(catMap[sl] || 'Bag');
+            },
             onAngleChange: (nextA) => {
               state.lockerSpinAngle = nextA;
             }
-          });
-          floorStage.querySelectorAll('[data-skater-loadout-dock] [data-dock-slot]').forEach(slotEl => {
-            slotEl.classList.add('cursor-pointer', 'hover:border-cyan-300');
-            slotEl.addEventListener('click', (ev) => {
-              ev.stopPropagation();
-              const sl = slotEl.getAttribute('data-dock-slot') || 'Bag';
-              const catMap = { visor: 'Visor', stick: 'Stick', gloves: 'Gloves', skates: 'Skates' };
-              openLockerEquipmentBagDrawer(catMap[sl] || 'Bag');
-            });
           });
         } else {
           floorStage.innerHTML = renderYoungHockeyPlayerAvatar(prof, state.lockerSpinAngle || 0, null, { standingLockerFloor: true });
@@ -31005,7 +31222,13 @@
       const shareInviteUrl = `${baseUrl}?friend=${encodeURIComponent(myCode)}`;
 
       if (tab === 'find' || tab === 'wall') {
-        if (hdr) hdr.textContent = '🖼️ Friends Wall — Swap Friend Codes with Teammates';
+        if (hdr) hdr.textContent = '🖼️ Friends & Family Wall — Swap Friend Codes & Scout Teammates';
+        const previewSampleOn = Boolean(state.previewSampleTeammates);
+        const effectiveFriends = (typeof window.getEffectiveClubhouseFriends === 'function')
+          ? window.getEffectiveClubhouseFriends(prof)
+          : (prof.acceptedFriends || []);
+        const citiesList = window.SynapzNhlAtlasMap?.NHL_ATLAS_CITIES || [];
+
         const pendingHtml = prof.pendingFriendRequests.length === 0
           ? '<div class="text-[11px] text-slate-400 font-semibold">0 pending requests right now.</div>'
           : prof.pendingFriendRequests.map((req, rIdx) => `
@@ -31021,29 +31244,48 @@
               </div>
             `).join('');
 
-        const acceptedHtml = prof.acceptedFriends.length === 0
-          ? '<div class="sm:col-span-2 p-3 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-400 font-semibold">0 friends connected yet. Swap Friend Codes with teammates to see their tour stop on the 32-City NHL Map!</div>'
-          : prof.acceptedFriends.map((fr, fIdx) => `
-              <div data-accepted-friend-code="${fr.friendCode}" class="p-2.5 rounded-xl bg-slate-900/95 border border-cyan-400/45 flex items-center justify-between gap-2.5">
-                <div class="flex items-center gap-2.5 min-w-0">
-                  <div class="w-11 h-14 rounded-lg bg-slate-950 border border-slate-800 flex items-center justify-center shrink-0 p-0.5">
-                    ${renderYoungHockeyPlayerAvatar(fr, 0, null, { hideGearBadges: true })}
+        const acceptedHtml = effectiveFriends.length === 0
+          ? '<div class="sm:col-span-2 p-3 rounded-xl bg-slate-950 border border-slate-800 text-xs text-slate-400 font-semibold">0 friends connected yet. Swap Friend Codes with teammates—or toggle <strong>👀 Preview Sample Teammates</strong> above to test-click teammate Scouting Cards!</div>'
+          : effectiveFriends.map((fr, fIdx) => {
+              const stopIdx = Math.max(0, Math.min(31, Number(fr.cityStopIdx ?? fr.currentCityIdx ?? 0)));
+              const cityObj = citiesList[stopIdx] || { stopNumber: stopIdx + 1, name: fr.cityName || 'San Jose', code: 'SJS' };
+              const posTxt = fr.positionCode ? ` • ${fr.positionCode}` : '';
+              const avatarHtml = window.SynapzSkaterRenderer360?.buildCustomizableSkaterSvg
+                ? window.SynapzSkaterRenderer360.buildCustomizableSkaterSvg(fr, { angleDeg: 0 })
+                : renderYoungHockeyPlayerAvatar(fr, 0, null, { hideGearBadges: true });
+              return `
+                <div
+                  data-accepted-friend-code="${fr.friendCode}"
+                  data-scout-friend-idx="${fIdx}"
+                  role="button"
+                  tabindex="0"
+                  title="Tap to open ${fr.name}'s Player Scouting Card"
+                  class="clubhouse-friend-scout-row p-2.5 rounded-xl bg-slate-900/95 hover:bg-slate-900 border border-cyan-400/50 hover:border-amber-400 flex items-center justify-between gap-2.5 transition cursor-pointer"
+                >
+                  <div class="flex items-center gap-2.5 min-w-0">
+                    <div class="w-12 h-16 rounded-lg bg-slate-950 border border-slate-800 flex items-center justify-center shrink-0 p-0.5 overflow-hidden">
+                      ${avatarHtml}
+                    </div>
+                    <div class="min-w-0 space-y-0.5">
+                      <div class="text-xs font-black text-white" style="white-space:normal;">${fr.name}${fr.jerseyNumber ? ` #${fr.jerseyNumber}` : ''} <span class="text-cyan-300">(${fr.divisionLabel || '12U'}${posTxt})</span></div>
+                      <div class="text-[10px] font-bold text-amber-300">📍 City ${cityObj.stopNumber} of 32 • ${cityObj.name}</div>
+                      <div class="text-[10px] font-black text-emerald-300">🧠 Hockey IQ: ${fr.iqScore || 0}</div>
+                    </div>
                   </div>
-                  <div class="min-w-0">
-                    <div class="text-xs font-black text-white" style="white-space:normal;">${fr.name}${fr.jerseyNumber ? ` #${fr.jerseyNumber}` : ''} (${fr.divisionLabel || '12U'})</div>
-                    <div class="text-[10px] font-bold text-emerald-300">📍 ${fr.cityName || 'San Jose'} • IQ ${fr.iqScore || 0}</div>
+                  <div class="flex flex-col items-end gap-1 shrink-0">
+                    <span class="px-2.5 py-1 rounded-lg bg-amber-400 text-slate-950 text-[10px] font-black shadow">
+                      🔍 Scouting Card
+                    </span>
+                    <button type="button" data-race-invite-idx="${fIdx}" class="btn-invite-friend-race px-2 py-0.5 rounded bg-cyan-500/20 border border-cyan-400/60 text-cyan-200 text-[9.5px] font-black cursor-pointer">
+                      🗺️ On Map
+                    </button>
                   </div>
                 </div>
-                <div class="flex items-center gap-1.5 shrink-0">
-                  <button type="button" data-race-invite-idx="${fIdx}" class="btn-invite-friend-race px-2.5 py-1.5 rounded-lg bg-cyan-500/20 border border-cyan-400/60 text-cyan-200 text-[10px] font-black cursor-pointer">
-                    🗺️ View on Map
-                  </button>
-                </div>
-              </div>
-            `).join('');
+              `;
+            }).join('');
 
         const milestones = [];
-        prof.acceptedFriends.forEach(fr => {
+        effectiveFriends.forEach(fr => {
           (fr.milestones || []).forEach(m => {
             milestones.push({ who: `${fr.name}${fr.jerseyNumber ? ` #${fr.jerseyNumber}` : ''}`, text: m });
           });
@@ -31057,7 +31299,20 @@
                   <div class="text-[11px] font-black text-cyan-300">📲 Invite a Friend — Swap Friend Codes with teammates</div>
                   <div class="text-xs font-black text-white mt-0.5">Your Friend Code: <span id="mySafeSportFriendCodeBadge" class="px-2 py-0.5 rounded bg-slate-950 border border-amber-400 text-amber-300 font-mono">${myCode}</span></div>
                 </div>
-                <div class="flex items-center gap-1.5">
+                <div class="flex flex-wrap items-center gap-1.5">
+                  <button
+                    type="button"
+                    id="btnToggleSampleTeammatesWall"
+                    data-toggle-sample-teammates="true"
+                    aria-pressed="${previewSampleOn ? 'true' : 'false'}"
+                    class="px-2.5 py-1.5 rounded-xl border text-xs font-black transition cursor-pointer ${
+                      previewSampleOn
+                        ? 'bg-emerald-400 text-slate-950 border-emerald-200 shadow'
+                        : 'bg-slate-950 hover:bg-slate-800 border-emerald-400/60 text-emerald-200'
+                    }"
+                  >
+                    👀 Preview Sample Teammates${previewSampleOn ? ': ON' : ''}
+                  </button>
                   <button type="button" id="btnShareFriendInviteNative" class="px-3 py-1.5 rounded-xl bg-gradient-to-r from-cyan-400 to-emerald-400 text-slate-950 text-xs font-black shadow cursor-pointer">
                     📲 Send Invite Link
                   </button>
@@ -31081,7 +31336,7 @@
             </div>
 
             <div class="space-y-1.5">
-              <div class="text-[10px] font-black uppercase text-emerald-300">🤝 Teammates &amp; Friends (${prof.acceptedFriends.length})</div>
+              <div class="text-[10px] font-black uppercase text-emerald-300">🤝 Teammates &amp; Friends (${effectiveFriends.length}) — Tap any teammate to open their Scouting Card</div>
               <div id="clubhouseAcceptedFriendsList" class="grid grid-cols-1 sm:grid-cols-2 gap-2">${acceptedHtml}</div>
             </div>
 
@@ -31093,6 +31348,24 @@
             ` : ''}
           </div>
         `;
+
+        document.getElementById('btnToggleSampleTeammatesWall')?.addEventListener('click', () => {
+          SoundFX.playTap();
+          state.previewSampleTeammates = !state.previewSampleTeammates;
+          renderSynapzFriendsWallModal();
+        });
+
+        container.querySelectorAll('.clubhouse-friend-scout-row').forEach((rowEl) => {
+          rowEl.addEventListener('click', (ev) => {
+            if (ev.target && ev.target.closest && ev.target.closest('.btn-invite-friend-race')) return;
+            SoundFX.playTap();
+            const idx = Number(rowEl.getAttribute('data-scout-friend-idx') || 0);
+            const targetFr = effectiveFriends[idx];
+            if (targetFr && typeof window.openFriendScoutingCardModal === 'function') {
+              window.openFriendScoutingCardModal(targetFr);
+            }
+          });
+        });
 
         const showShareToast = (msg) => {
           const t = document.getElementById('clubhouseFriendShareToast');
@@ -31136,7 +31409,42 @@
           }
           SoundFX.playGoalHorn();
           if (inp) inp.value = '';
-          showShareToast(`✅ Sent Friend Request to ${code}! Avatars & milestones unlock once both teammates accept.`);
+          const alreadyPending = (prof.pendingFriendRequests || []).some(r => r && r.requestCode === code);
+          const alreadyAccepted = (prof.acceptedFriends || []).some(f => f && f.friendCode === code);
+          if (!alreadyPending && !alreadyAccepted) {
+            const digits = code.replace(/[^0-9]/g, '').slice(0, 2) || '17';
+            const cleanName = (code.replace(/[0-9]/g, '').slice(0, 8) || 'Teammate');
+            const displayName = cleanName.charAt(0).toUpperCase() + cleanName.slice(1).toLowerCase();
+            prof.pendingFriendRequests.push({
+              requestCode: code,
+              requestedAt: 'Pending Mutual Approval',
+              _lockedFriendPayload: {
+                friendCode: code,
+                name: displayName,
+                jerseyNumber: digits,
+                divisionLabel: prof.divisionLabel || '12U AA',
+                positionCode: 'C',
+                stockAvatarId: 'avatar-male-4',
+                hairStyle: 'short',
+                hairColor: '#78350f',
+                jerseyColor: '#0284c7',
+                equippedStickId: 'stick-neon',
+                equippedGlovesId: 'gloves-vapor',
+                equippedVisorId: 'visor-blue',
+                equippedSkatesId: 'skate-silver',
+                equippedSkates: 'skate-silver',
+                iqScore: 124,
+                cityStopIdx: 9,
+                cityName: 'Denver',
+                inMapRace: true,
+                zoneMetrics: { dz: 81, nz: 76, om: 85, oz: 79, st: 72 },
+                milestones: [`Connected via Friend Code ${code}`]
+              }
+            });
+            saveProgress();
+            renderSynapzFriendsWallModal();
+          }
+          showShareToast(`✅ Sent Friend Request to ${code}! Accept mutual approval below to unlock their Scouting Card & Map Pin.`);
         });
 
         container.querySelectorAll('.btn-accept-friend-req').forEach(btn => {
@@ -32398,7 +32706,11 @@
       });
       bindClick('btnLockerSaveExitLobby', saveAndExitToRinkLobby);
       bindClick('btnLockerOpenEquipmentBag', () => openLockerEquipmentBagDrawer('Bag'));
-      bindClick('lockerStanding3dAvatarStage', () => openLockerEquipmentBagDrawer('Bag'));
+      bindClick('lockerStanding3dAvatarStage', (ev) => {
+        const stageEl = document.getElementById('lockerStanding3dAvatarStage');
+        if (stageEl && stageEl._skaterWasDragged) return;
+        openLockerEquipmentBagDrawer('Bag');
+      });
       bindClick('btnCloseLockerEquipmentBag', () => document.getElementById('lockerEquipmentBagSheet')?.classList.add('hidden'));
       bindClick('btnLockerGoToProShop', () => {
         document.getElementById('synapzLockerRoomModal')?.classList.add('hidden');
@@ -32440,11 +32752,10 @@
         });
       });
 
-      // Room 4: Walk-In Pro Shop Hotspots & Rack Sheet Controls (Stay-In-Room × Rule!)
+      // Room 4: Walk-In Pro Shop 4 Invisible Fixture Hotspots & Rack Sheet Controls (Stay-In-Room × Rule!)
       bindClick('proShopHotspotSticks', () => openProShopRackCategory('Stick'));
       bindClick('proShopHotspotHelmets', () => openProShopRackCategory('Visor'));
       bindClick('proShopHotspotGloves', () => openProShopRackCategory('Gloves'));
-      bindClick('proShopHotspotShowcaseCounter', () => openProShopRackCategory('Visor'));
       bindClick('proShopHotspotSkates', () => openProShopRackCategory('Skates'));
       bindClick('btnCloseProShopRackDrawer', () => document.getElementById('proShopRackOverlaySheet')?.classList.add('hidden'));
       bindClick('btnOpenCustomAvatarFromShop', () => {
@@ -32524,15 +32835,15 @@
       });
       bindClick('btnFriendsWallSaveExitLobby', saveAndExitToRinkLobby);
       bindClick('btnCloseClubhouseDrawer', () => {
+        document.getElementById('friendScoutingCardModal')?.classList.add('hidden');
         document.getElementById('clubhouseOverlaySheet')?.classList.add('hidden');
         if (window.SynapzV14Engine?.showdown?.isOpen) {
           window.SynapzV14Engine.showdown.close();
         }
       });
       bindClick('clubhouseHotspotFriendsWall', () => openSynapzFriendsWallModal('find'));
-      bindClick('clubhouseHotspotMapRaceScreen', () => openClubhouseCenterTvShowdown('join'));
-      bindClick('clubhouseHotspotTourMap', () => openSynapzFriendsWallModal('map'));
-      bindClick('btnClubhouseOpenTourMap', () => openSynapzFriendsWallModal('map'));
+      bindClick('clubhouseHotspotMapRaceScreen', () => openSynapzFriendsWallModal('map'));
+      bindClick('btnClubhouseLiveShowdown', () => openClubhouseCenterTvShowdown('join'));
       bindClick('clubhouseHotspotTrophyCase', () => openSynapzFriendsWallModal('trophies'));
 
       window.syncV151VisualModulesOnReady = () => {
@@ -32596,6 +32907,7 @@
           }
           const subPanelsInPriority = [
             'founderRedFlagModal',
+            'friendScoutingCardModal',
             'v14CoachPreviewAll5Drawer',
             'synapzPrintSheetOverlay',
             'trophyRoomModal',
@@ -32773,7 +33085,7 @@
             id: ag ? ag.id : 'agent-leo',
             name: ag ? `Agent ${ag.name}` : 'Agent Leo',
             badge: ag ? `🔊 Room Tip • ${ag.name}` : '🔊 Room Tip',
-            role: ag ? (ag.styleTag || 'Game Guide') : 'Game Guide',
+            role: ag ? (ag.styleTag || 'Hockey Agent') : 'Hockey Agent',
             avatar: ag ? (ag.img || 'assets/cutouts/agent-leo.png') : 'assets/cutouts/agent-leo.png'
           };
         }
@@ -32788,7 +33100,7 @@
           id: foundAg ? foundAg.id : 'agent-leo',
           name: foundAg ? `Agent ${foundAg.name}` : 'Agent Leo',
           badge: foundAg ? `🔊 Room Tip • ${foundAg.name}` : '🔊 Room Tip',
-          role: foundAg ? (foundAg.styleTag || 'Game Guide') : 'Game Guide',
+          role: foundAg ? (foundAg.styleTag || 'Hockey Agent') : 'Hockey Agent',
           avatar: foundAg ? (foundAg.img || 'assets/cutouts/agent-leo.png') : 'assets/cutouts/agent-leo.png'
         };
       },
@@ -33055,7 +33367,7 @@
     // SECTION 32–43: VERIFIED REAL CODED UPGRADES RUNTIME & PRE-CODED BANK
     // (`synapz-hockey-v12.7-5persona-human-vision` • 288 Live Upgrades)
     // =========================================================================
-    window.SYNAPZ_CACHE_NAME = 'synapz-hockey-v15.4.1-live-and-8law-constitution';
+    window.SYNAPZ_CACHE_NAME = 'synapz-hockey-v15.5-player-walkthrough-polish';
 
     const ALL_63_DEPLOYED_UPGRADE_IDS = [
       // Batch A (12 items)
@@ -36928,7 +37240,7 @@
         <button id="btnLockerOpenEditProfile" type="button" class="px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-full bg-slate-950/90 hover:bg-slate-900 border border-cyan-400/80 text-cyan-200 text-[11px] sm:text-xs font-black shadow-2xl backdrop-blur-md cursor-pointer">
           ✏️ <span class="hidden sm:inline">Edit </span>Profile
         </button>
-        <button id="btnLockerChangeAgent" type="button" class="px-2 sm:px-2.5 py-1.5 sm:py-2 rounded-full bg-slate-950/90 hover:bg-slate-900 border border-slate-700 text-slate-200 text-[11px] sm:text-xs font-black shadow-2xl cursor-pointer" title="Switch Guide">
+        <button id="btnLockerChangeAgent" type="button" class="px-2 sm:px-2.5 py-1.5 sm:py-2 rounded-full bg-slate-950/90 hover:bg-slate-900 border border-slate-700 text-slate-200 text-[11px] sm:text-xs font-black shadow-2xl cursor-pointer" title="Switch Agent">
           🎙️
         </button>
         <button id="btnCloseSynapzLockerRoomModal" type="button" class="hidden w-8 h-8 rounded-full bg-slate-950/90 border border-slate-600 text-slate-200 text-xs font-black items-center justify-center">✕</button>
@@ -36983,13 +37295,12 @@
       <div id="lockerRoomGearItemsGrid" class="grid grid-cols-1 sm:grid-cols-2 gap-2 max-h-60 overflow-y-auto pr-1"></div>
 
       <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-800">
-        <button id="btnLockerSpinFrontBack" type="button" class="px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-cyan-400/60 text-cyan-200 text-[11px] font-black cursor-pointer">
-          🔄 Flip Front / Back
-        </button>
+        <span class="text-[11px] font-bold text-slate-400">↔ Drag your skater in the stall to spin</span>
         <button id="btnLockerGoToProShop" type="button" class="text-[11px] font-bold text-amber-300 hover:text-amber-200 underline cursor-pointer">
           Want new twigs, visors, or skates? Visit the Walk-In Pro Shop →
         </button>
         <div class="hidden">
+          <button id="btnLockerSpinFrontBack" type="button"></button>
           <button id="btnLockerPreviewBlackout" type="button">Blackout</button>
           <div id="lockerRoom3dAvatarWrap"></div>
         </div>
@@ -37167,18 +37478,18 @@
   </div>
 
   <!-- ===================================================================== -->
-  <!-- ROOM 5: PURE FULL-SCREEN CLUBHOUSE (Center TV Showdown + 32-City Map + 3-Shelf Trophy Case) -->
+  <!-- ROOM 5: PURE FULL-SCREEN CLUBHOUSE (Friends Wall, Map Race Screen, Trophy Case & Top-Bar Showdown) -->
   <!-- ===================================================================== -->
   <div id="synapzFriendsWallModal" class="hidden synapz-pure-fullscreen-room z-[98]">
     <img loading="lazy" decoding="async" src="assets/rooms/room-clubhouse.png" alt="" aria-hidden="true" class="synapz-pure-room-ambient-bg" />
 
-    <!-- Top-Left Exit + 32-City Map Pill + Optional ? Show Hotspots (Unobstructed Top-Right Red Flag!) -->
+    <!-- Top-Left Exit + ⚡ Live Team Showdown (4-Digit PIN) + Optional ? Show Hotspots (Unobstructed Top-Right Red Flag!) -->
     <div class="fixed top-3 left-3 z-40 flex items-center gap-2">
       <button id="btnFriendsWallSaveExitLobby" type="button" class="px-3.5 py-2 rounded-full bg-slate-950/90 hover:bg-slate-900 border border-amber-400/75 text-amber-200 text-xs font-black shadow-2xl backdrop-blur-md cursor-pointer">
         ← Main Lobby
       </button>
-      <button id="btnClubhouseOpenTourMap" type="button" class="px-3 py-2 rounded-full bg-slate-950/90 hover:bg-slate-900 border border-cyan-400/75 text-cyan-200 text-xs font-black shadow-2xl backdrop-blur-md cursor-pointer">
-        🗺️ 32-City NHL Map
+      <button id="btnClubhouseLiveShowdown" type="button" class="px-3 py-2 rounded-full bg-slate-950/92 hover:bg-slate-900 border border-cyan-400/80 text-cyan-200 text-xs font-black shadow-2xl backdrop-blur-md cursor-pointer">
+        ⚡ Live Team Showdown (4-Digit PIN)
       </button>
       <button type="button" data-toggle-room-hotspots="1" aria-pressed="false" class="px-2.5 py-1.5 rounded-full bg-slate-950/85 hover:bg-slate-900 border border-slate-700/80 text-slate-300 hover:text-amber-200 text-[11px] font-black shadow-xl backdrop-blur-md cursor-pointer transition">
         ? Show Hotspots
@@ -37188,18 +37499,22 @@
       <button id="btnCloseSynapzFriendsWallModal" type="button">✕</button>
     </div>
 
-    <!-- Pure 16:9 Clubhouse Picture Stage (Clean Artwork — Zero Permanent Text Banners!) -->
+    <!-- Pure 16:9 Clubhouse Picture Stage (3 Clean 100% Transparent Invisible Tap Zones Over Brass-Plaque Features; Zero Floor-Rug Map Button!) -->
     <div id="clubhouseRoomSceneCanvas" class="synapz-pure-room-stage">
       <img loading="lazy" decoding="async" id="clubhouseRoomSceneImg" src="assets/rooms/room-clubhouse.png" alt="SYNAPZ Clubhouse Lounge" class="synapz-room-bg-img" />
 
-      <button id="clubhouseHotspotFriendsWall" type="button" data-clubhouse-hotspot="find" aria-label="Friends Wall" title="Friends Wall" class="synapz-golden-gear-hotspot" style="left: 1.5%; top: 17.5%; width: 25.0%; height: 66.0%;"></button>
-      <button id="clubhouseHotspotMapRaceScreen" type="button" data-clubhouse-hotspot="showdown" aria-label="Center TV Live Team Showdown" title="Center TV Live Team Showdown" class="synapz-golden-gear-hotspot" style="left: 36.8%; top: 39.0%; width: 26.4%; height: 23.5%;"></button>
-      <button id="clubhouseHotspotTourMap" type="button" data-clubhouse-hotspot="map" aria-label="32-City North America NHL Tour Map" title="32-City North America NHL Tour Map" class="synapz-golden-gear-hotspot" style="left: 31.0%; top: 65.5%; width: 38.0%; height: 28.5%;"></button>
-      <button id="clubhouseHotspotTrophyCase" type="button" data-clubhouse-hotspot="trophies" aria-label="3-Shelf Championship Trophy Case" title="3-Shelf Championship Trophy Case" class="synapz-golden-gear-hotspot" style="left: 73.5%; top: 18.0%; width: 25.0%; height: 65.0%;"></button>
+      <!-- 1. Left FRIENDS & FAMILY Wall -> Friends & Family Wall -->
+      <button id="clubhouseHotspotFriendsWall" type="button" data-clubhouse-hotspot="find" aria-label="Friends &amp; Family Wall" class="synapz-golden-gear-hotspot" style="left: 1.5%; top: 16.5%; width: 25.5%; height: 67.0%; background: transparent !important; border: none !important; box-shadow: none !important;"></button>
+
+      <!-- 2. Center Back HEAD-TO-HEAD MAP RACE Screen -> 32-City NHL Head-to-Head Map Race -->
+      <button id="clubhouseHotspotMapRaceScreen" type="button" data-clubhouse-hotspot="map" aria-label="32-City NHL Head-to-Head Map Race" class="synapz-golden-gear-hotspot" style="left: 36.5%; top: 38.5%; width: 27.0%; height: 24.5%; background: transparent !important; border: none !important; box-shadow: none !important;"></button>
+
+      <!-- 3. Right TROPHY CASE Cabinet -> 3-Shelf Trophy Case -->
+      <button id="clubhouseHotspotTrophyCase" type="button" data-clubhouse-hotspot="trophies" aria-label="3-Shelf Trophy Case" class="synapz-golden-gear-hotspot" style="left: 73.0%; top: 17.5%; width: 25.5%; height: 66.5%; background: transparent !important; border: none !important; box-shadow: none !important;"></button>
     </div>
 
     <!-- Floating Clubhouse Drawer -->
-    <div id="clubhouseOverlaySheet" class="hidden fixed inset-x-2.5 bottom-2.5 sm:inset-x-auto sm:w-[94vw] sm:max-w-5xl max-h-[86dvh] overflow-y-auto z-50 rounded-2xl bg-slate-950/96 border-2 border-amber-400/85 p-3.5 shadow-2xl space-y-2.5 backdrop-blur-xl">
+    <div id="clubhouseOverlaySheet" class="hidden fixed inset-x-2.5 bottom-2.5 sm:inset-x-auto sm:w-[94vw] sm:max-w-5xl max-h-[86dvh] overflow-y-auto z-50 rounded-2xl bg-[#0b1324]/97 border-2 border-amber-400/85 p-3.5 shadow-2xl space-y-2.5 backdrop-blur-xl">
       <div class="flex items-center justify-between border-b border-slate-800 pb-2">
         <div id="clubhouseDrawerHeaderTitle" class="text-xs sm:text-sm font-black text-amber-300">🏛️ Clubhouse</div>
         <button id="btnCloseClubhouseDrawer" type="button" class="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-black cursor-pointer">✕ Close</button>
@@ -37211,12 +37526,12 @@
   <!-- ===================================================================== -->
   <!-- UNIVERSAL 1ST-VISIT-ONLY ROOM SPOTLIGHT TOUR OVERLAY                  -->
   <!-- ===================================================================== -->
-  <div id="universalRoomTourOverlay" class="hidden fixed inset-x-3 bottom-4 sm:left-4 sm:right-auto sm:max-w-lg z-[116] flex items-end gap-2.5 pointer-events-none select-none">
-    <img loading="lazy" decoding="async" id="universalRoomTourCutoutImg" src="assets/cutouts/coach-al.png" alt="Room Guide" class="synapz-waistup-cutout-img shrink-0" style="height: clamp(120px, 20vh, 185px); width: auto;" />
-    <div class="flex-1 p-3 rounded-2xl bg-slate-950/96 border-2 border-amber-400 shadow-2xl pointer-events-auto space-y-2">
+  <div id="universalRoomTourOverlay" class="hidden fixed bottom-5 left-5 sm:max-w-lg z-[145] flex items-end gap-2.5 pointer-events-none select-none">
+    <img loading="lazy" decoding="async" id="universalRoomTourCutoutImg" src="assets/cutouts/coach-al.png" alt="Room Agent" class="synapz-waistup-cutout-img shrink-0" style="height: clamp(115px, 19vh, 175px); width: auto;" />
+    <div id="universalRoomTourCard" style="background-color: rgba(11, 19, 36, 0.97) !important;" class="flex-1 p-3.5 rounded-2xl border-2 border-amber-400 shadow-2xl pointer-events-auto space-y-2">
       <div class="flex items-center justify-between gap-2">
         <span id="universalRoomTourStepBadge" class="text-[10px] font-black uppercase tracking-wider text-amber-300">1/4 Room Tour</span>
-        <button id="btnUniversalRoomTourSkip" type="button" class="px-2.5 py-1 rounded-lg bg-slate-800/85 border border-slate-700 text-[11px] font-bold text-slate-200 hover:text-white cursor-pointer">Skip</button>
+        <button id="btnUniversalRoomTourSkip" type="button" class="px-2.5 py-1 rounded-lg bg-slate-800/95 border border-slate-700 text-[11px] font-bold text-slate-200 hover:text-white cursor-pointer">Skip</button>
       </div>
       <p id="universalRoomTourSpeechText" class="text-xs sm:text-sm font-extrabold text-white leading-snug"></p>
       <div class="flex items-center justify-end">
@@ -37230,8 +37545,8 @@
   <!-- ===================================================================== -->
   <!-- FIRST-SHIFT ON-ICE DRILL AGENT TOUR (`Drills 1–3` Introducing Coach Bob!) -->
   <!-- ===================================================================== -->
-  <div id="firstShiftAgentDrillTourOverlay" class="hidden fixed left-2.5 right-2.5 sm:right-auto sm:max-w-md top-14 z-[88] flex items-center gap-2.5 p-2.5 rounded-2xl bg-slate-950/95 border-2 border-cyan-400 shadow-2xl backdrop-blur-md">
-    <img loading="lazy" decoding="async" id="firstShiftTourAgentImg" src="assets/cutouts/agent-leo.png" alt="Player Agent On-Ice Guide" class="synapz-waistup-cutout-img h-16 w-auto shrink-0" />
+  <div id="firstShiftAgentDrillTourOverlay" class="hidden fixed left-2.5 right-2.5 sm:right-auto sm:max-w-md top-14 z-[88] flex items-center gap-2.5 p-2.5 rounded-2xl bg-[#0b1324]/97 border-2 border-cyan-400 shadow-2xl backdrop-blur-md">
+    <img loading="lazy" decoding="async" id="firstShiftTourAgentImg" src="assets/cutouts/agent-leo.png" alt="Player On-Ice Agent" class="synapz-waistup-cutout-img h-16 w-auto shrink-0" />
     <div class="flex-1 min-w-0 space-y-1">
       <div class="flex items-center justify-between gap-1.5">
         <span id="firstShiftTourStepBadge" class="text-[10px] font-black uppercase text-cyan-300">First-Shift Tour • Drill 1 / 3</span>
@@ -37612,7 +37927,7 @@
   <!-- ===================================================================== -->
   <!-- Stage 3: Persistent Bottom-Left 64x64px Circular Character Medallion (Lobby, Map, Locker Room, Pro Shop, Clubhouse & Coach's Office) -->
   <button id="synapzPersistentCharCircleBtn" type="button" class="hidden fixed bottom-3 left-3 z-[105] px-2.5 py-1.5 rounded-full bg-slate-950/92 hover:bg-slate-900 border-2 border-amber-400/80 shadow-2xl flex items-center gap-2 cursor-pointer transition" title="Tap to hear a Room Tip">
-    <img loading="lazy" decoding="async" id="synapzPersistentCharCircleImg" src="assets/cutouts/agent-leo.png" alt="Room Guide" class="w-8 h-8 rounded-full object-contain object-top bg-slate-900 border border-amber-400/50 shrink-0" />
+    <img loading="lazy" decoding="async" id="synapzPersistentCharCircleImg" src="assets/cutouts/agent-leo.png" alt="Room Agent" class="w-8 h-8 rounded-full object-contain object-top bg-slate-900 border border-amber-400/50 shrink-0" />
     <span id="synapzPersistentCharCircleBadge" class="text-[11px] font-black text-amber-200 whitespace-nowrap pr-1">🔊 Room Tip</span>
   </button>
 
@@ -37621,9 +37936,9 @@
       <img loading="lazy" decoding="async" id="synapzUniversalCharAvatarImg" src="assets/cutouts/agent-leo.png" alt="Speaking Character" class="synapz-waistup-cutout-img" style="height:clamp(132px,22vh,210px);width:auto;border:0 !important;background:transparent !important;box-shadow:none !important;" />
       <span id="synapzUniversalCharBadgePill" class="absolute -bottom-1.5 left-1/2 -translate-x-1/2 z-20 px-2.5 py-0.5 rounded-full bg-amber-400 text-slate-950 text-[10px] font-black uppercase whitespace-nowrap shadow border border-slate-950">Agent Leo</span>
     </div>
-    <div class="bg-slate-950/96 border-2 border-amber-400 rounded-2xl p-3 sm:p-3.5 text-left shadow-2xl backdrop-blur-md flex-1 min-w-[230px] flex flex-col justify-between">
+    <div class="bg-[#0b1324]/97 border-2 border-amber-400 rounded-2xl p-3 sm:p-3.5 text-left shadow-2xl backdrop-blur-md flex-1 min-w-[230px] flex flex-col justify-between">
       <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 pb-1.5 mb-1.5">
-        <span id="synapzUniversalCharNameTitle" class="text-xs font-black text-amber-300">Agent Leo • Game Guide</span>
+        <span id="synapzUniversalCharNameTitle" class="text-xs font-black text-amber-300">Agent Leo • Hockey Agent</span>
         <div class="flex items-center gap-1.5">
           <button id="btnReplayUniversalCharSpeech" type="button" class="px-2 py-0.5 rounded bg-sky-500/25 hover:bg-sky-500/40 text-sky-200 text-[10px] font-black cursor-pointer" title="Replay Voice">🔊</button>
           <button id="btnDismissUniversalCharSpeech" type="button" class="px-2.5 py-1 rounded-xl bg-amber-400 hover:bg-amber-300 text-slate-950 text-[11px] font-black shadow cursor-pointer">

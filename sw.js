@@ -1,4 +1,4 @@
-const CACHE_NAME = 'synapz-hockey-v15.4.1-live-and-8law-constitution';
+const CACHE_NAME = 'synapz-hockey-v15.5-player-walkthrough-polish';
 const PRECACHE_ASSETS = [
   './',
   './index.html',
@@ -54,6 +54,13 @@ const PRECACHE_ASSETS = [
   './assets/avatars/avatar-female-2.png',
   './assets/avatars/avatar-female-3.png',
   './assets/avatars/avatar-female-4.png',
+  './assets/gear/stick_75_25.png',
+  './assets/gear/gloves_75_25.png',
+  './assets/gear/helmet_visor_75_25.png',
+  './assets/gear/helmet_cage_75_25.png',
+  './assets/gear/skates_75_25.png',
+  './assets/gear/jersey_75_25.png',
+  './assets/maps/north_america_75_25.png',
   './assets/rooms/room-rink-lobby.jpg',
   './assets/rooms/room-locker-room.jpg',
   './assets/rooms/room-coaches-office.jpg',

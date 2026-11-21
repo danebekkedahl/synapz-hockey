@@ -1,32 +1,32 @@
 /**
- * SYNAPZ HOCKEY v15.4 — Real Painted 75/25 Skater Renderer + Pixel-Mask HSL Colorizer
- * (`engine/skater_renderer_360.js`)
+ * SYNAPZ HOCKEY v15.5 — Real Painted 75/25 Skater Renderer, Direct Finger-Drag Spin,
+ * Live Painted Gear Equip Overlays & 0ms Try-On (`engine/skater_renderer_360.js`)
  *
- * CRITICAL STUDIO ART ARCHITECTURE (Lock 4 — ZERO Vector Robot Faces/Bodies):
- *   - Front View (`0°`): Renders the authentic studio-painted 75%-realistic / 25%-stylized
- *     character PNGs (`assets/avatars/avatar-male-1..4.png`, `avatar-female-1..4.png`) onto a
- *     crisp high-DPI `<canvas>` (`devicePixelRatio` scaled, `imageSmoothingEnabled = true`).
- *   - Luminance-Preserving HSL Pixel-Mask Color Tinting:
- *     1) Painted Hair Region Pixels (per-avatar hair geometry + facial/ear/neck skin keep-out
- *        mask + blue-cloth exclusion): Shifts `Hue` & `Saturation` smoothly to the player's
- *        selected Hair Color (`Blonde`, `Brown`, `Black`, `Red`, `Blue`, `Platinum`, etc.)
- *        while preserving 100% of painted brush-stroke shading, strand contrast, and highlights.
- *     2) Painted Jersey / Sweater Region Pixels (torso + shoulder + sleeve cloth envelope
- *        excluding skin, braids, silver puck crest/stripes, gloves, pants, and skates):
- *        Shifts `Hue` & `Saturation` smoothly to the player's selected Jersey Color (`Royal Blue`,
- *        `Red`, `Pink`, `Teal`, `Emerald`, `Gold`, `Purple`, `Black`, etc.) while preserving
- *        100% of original painted cloth folds, shadows, collar stitching, and highlights.
- *   - `0ms` Bitmap Cache: Processed `<canvas>` bitmaps are cached in an in-memory `Map` keyed by
- *     `avatarBaseId|hairColor|jerseyColor` for instant Safari-15 (`iPadOS 15.8.8`) re-renders.
- *   - Sleek Non-Overlapping Loadout Dock (`gear_art_75_25.js`): Displays the 4 shaded 75/25 SVG
- *     badges (`Helmet/Visor`, `Stick`, `Gloves`, `Skates`) alongside the painted skater in
- *     Pro Shop Try-On Floor & Locker Stall without drawing stick-on vector shapes over painted art.
- *   - Back View (`180°`): Smooth `-webkit-transform` / `transform` flip to a richly stitched
- *     Pro Hockey Rear Locker Sweater (`TUG BOAT` tackle-twill nameplate + `#28` double-layer
- *     back number + fight strap + 4-slot Equipped Gear Showcase) — ZERO geometric robot bodies!
+ * STUDIO CONSTITUTION LAW 3 & v15.5 POLISH ARCHITECTURE:
+ *   - Preserves all 8 studio-painted 75%-realistic / 25%-stylized character PNGs
+ *     (`assets/avatars/avatar-male-1..4.png`, `avatar-female-1..4.png`) with ZERO vector robots.
+ *   - Luminance-Preserving HSL Pixel-Mask Color Tinting on `<canvas>`:
+ *     1) Painted Hair Region (`Blonde`, `Brown`, `Black`, `Red`, `Blue`, `Platinum`)
+ *     2) Optional Explicit Skin-Tone Complexion Shift (`Fair`, `Warm Peach`, `Tan`, `Deep`)
+ *        when chosen on Step 2, while preserving 0-drift natural painted skin by default
+ *     3) Painted Jersey / Sweater Cloth Region (`Blue`, `Red`, `Pink`, `Teal`, `Emerald`, `Gold`, `Purple`, `Black`)
+ *     4) Painted 4-Roll Gloves on Skater's Hands + Skate Trim/Steel Runners dynamically tinted
+ *        to match equipped or tried-on Pro Shop gear in `0ms`!
+ *     5) Symmetrical Front-Fitted Pro Bucket + Translucent Iridium Visor Shield (`Ice Blue`,
+ *        `Sunset Gold`, `Smoke-Blackout`) or Mirrored Chrome Cage + Painted 75/25 Composite Stick
+ *        composited cleanly on `<canvas>` whenever equipped or tried on!
+ *   - Pure Finger-Drag Spin (`rotateY` 3D perspective scrub, ZERO `Spin 360°` button,
+ *     ZERO `(333°)` / `(Front 0°)` degree readouts, ZERO diagonal lean/skew) between Front
+ *     Painted Skater and Rear Painted Pro Sweater (`GUGGER` + `#38` stitched tackle-twill back).
  */
 
-import { renderGearItemArtSvg, buildStarterGearItems } from './gear_art_75_25.js';
+import {
+  renderGearItemArtSvg,
+  buildStarterGearItems,
+  preloadAllPaintedGearArt,
+  getTintedGearCanvas,
+  getTintedGearDataUrl
+} from './gear_art_75_25.js';
 
 let _skaterUidSeq = 0;
 function nextSkaterUid() {
@@ -43,14 +43,14 @@ function escHtml(str) {
 }
 
 export const PAINTED_SKATER_CATALOG = Object.freeze([
-  { id: 'avatar-male-1',   label: 'Skater 1', styleTag: 'Classic Flow',  gender: 'boy',  src: 'assets/avatars/avatar-male-1.png',   hairBaseLum: 0.34, defaultHairStyle: 'flow' },
-  { id: 'avatar-male-2',   label: 'Skater 2', styleTag: 'Pro Fade',      gender: 'boy',  src: 'assets/avatars/avatar-male-2.png',   hairBaseLum: 0.09, defaultHairStyle: 'buzz' },
-  { id: 'avatar-male-3',   label: 'Skater 3', styleTag: 'Mohawk Edge',   gender: 'boy',  src: 'assets/avatars/avatar-male-3.png',   hairBaseLum: 0.08, defaultHairStyle: 'mohawk' },
-  { id: 'avatar-male-4',   label: 'Skater 4', styleTag: 'Side Part',     gender: 'boy',  src: 'assets/avatars/avatar-male-4.png',   hairBaseLum: 0.15, defaultHairStyle: 'short' },
-  { id: 'avatar-female-1', label: 'Skater 5', styleTag: 'High Pony',     gender: 'girl', src: 'assets/avatars/avatar-female-1.png', hairBaseLum: 0.58, defaultHairStyle: 'ponytail' },
-  { id: 'avatar-female-2', label: 'Skater 6', styleTag: 'Pro Braids',    gender: 'girl', src: 'assets/avatars/avatar-female-2.png', hairBaseLum: 0.17, defaultHairStyle: 'braids' },
-  { id: 'avatar-female-3', label: 'Skater 7', styleTag: 'Wavy Flow',     gender: 'girl', src: 'assets/avatars/avatar-female-3.png', hairBaseLum: 0.16, defaultHairStyle: 'curly' },
-  { id: 'avatar-female-4', label: 'Skater 8', styleTag: 'Twin Braids',   gender: 'girl', src: 'assets/avatars/avatar-female-4.png', hairBaseLum: 0.36, defaultHairStyle: 'braids' }
+  { id: 'avatar-male-1',   label: 'Skater 1', styleTag: 'Classic Flow',  gender: 'boy',  src: 'assets/avatars/avatar-male-1.png',   hairBaseLum: 0.34, skinBaseLum: 0.64, defaultHairStyle: 'flow' },
+  { id: 'avatar-male-2',   label: 'Skater 2', styleTag: 'Pro Fade',      gender: 'boy',  src: 'assets/avatars/avatar-male-2.png',   hairBaseLum: 0.09, skinBaseLum: 0.34, defaultHairStyle: 'buzz' },
+  { id: 'avatar-male-3',   label: 'Skater 3', styleTag: 'Mohawk Edge',   gender: 'boy',  src: 'assets/avatars/avatar-male-3.png',   hairBaseLum: 0.08, skinBaseLum: 0.48, defaultHairStyle: 'mohawk' },
+  { id: 'avatar-male-4',   label: 'Skater 4', styleTag: 'Side Part',     gender: 'boy',  src: 'assets/avatars/avatar-male-4.png',   hairBaseLum: 0.15, skinBaseLum: 0.54, defaultHairStyle: 'short' },
+  { id: 'avatar-female-1', label: 'Skater 5', styleTag: 'High Pony',     gender: 'girl', src: 'assets/avatars/avatar-female-1.png', hairBaseLum: 0.58, skinBaseLum: 0.68, defaultHairStyle: 'ponytail' },
+  { id: 'avatar-female-2', label: 'Skater 6', styleTag: 'Pro Braids',    gender: 'girl', src: 'assets/avatars/avatar-female-2.png', hairBaseLum: 0.17, skinBaseLum: 0.39, defaultHairStyle: 'braids' },
+  { id: 'avatar-female-3', label: 'Skater 7', styleTag: 'Wavy Flow',     gender: 'girl', src: 'assets/avatars/avatar-female-3.png', hairBaseLum: 0.16, skinBaseLum: 0.52, defaultHairStyle: 'curly' },
+  { id: 'avatar-female-4', label: 'Skater 8', styleTag: 'Twin Braids',   gender: 'girl', src: 'assets/avatars/avatar-female-4.png', hairBaseLum: 0.36, skinBaseLum: 0.67, defaultHairStyle: 'braids' }
 ]);
 
 const NAMED_HAIR_COLORS = {
@@ -78,7 +78,6 @@ const NAMED_JERSEY_COLORS = {
   black: '#111827'
 };
 
-// In-memory Image & Tinted Bitmap Caches (`avatarBaseId|hairColor|jerseyColor` -> Canvas)
 const _rawImageCache = new Map();
 const _rawImagePromises = new Map();
 const _tintedBitmapCache = new Map();
@@ -183,191 +182,181 @@ function boxInsideWeight(nx, ny, x0, x1, y0, y1, fx = 0.012, fy = 0.008) {
   return wx * wy;
 }
 
-/**
- * Per-avatar Spatial + HSL Skin Protection & Hair Isolation Classifier.
- * Measured directly against all 8 `assets/avatars/avatar-*.png` bitmaps (`~374x900`)
- * so facial skin, eyes, sclera, lips, ears, and neck stay 100% natural (`0%` bleed).
- */
+function computeSkinZoneEnvelope(avatarId, nx, ny, hue, sat) {
+  switch (avatarId) {
+    case 'avatar-male-2':
+      return Math.max(
+        ellipseInsideWeight(nx, ny, 0.500, 0.126, 0.124, 0.070, 0.06),
+        ellipseInsideWeight(nx, ny, 0.500, 0.126, 0.170, 0.030, 0.08),
+        boxInsideWeight(nx, ny, 0.380, 0.620, 0.168, 0.236, 0.012, 0.008)
+      );
+    case 'avatar-male-3':
+      return Math.max(
+        ellipseInsideWeight(nx, ny, 0.500, 0.139, 0.119, 0.060, 0.06),
+        ellipseInsideWeight(nx, ny, 0.500, 0.142, 0.170, 0.028, 0.08),
+        boxInsideWeight(nx, ny, 0.380, 0.620, 0.178, 0.238, 0.012, 0.008)
+      );
+    case 'avatar-male-4':
+      return Math.max(
+        ellipseInsideWeight(nx, ny, 0.500, 0.134, 0.115, 0.060, 0.06),
+        ellipseInsideWeight(nx, ny, 0.500, 0.136, 0.172, 0.024, 0.08),
+        boxInsideWeight(nx, ny, 0.380, 0.620, 0.174, 0.236, 0.012, 0.008)
+      );
+    case 'avatar-female-1': {
+      const isYellowBlondeBang = (ny < 0.126) ? smoothstep(29, 36, hue) * smoothstep(0.28, 0.42, sat) : 0;
+      const base = Math.max(
+        ellipseInsideWeight(nx, ny, 0.512, 0.149, 0.110, 0.058, 0.06),
+        ellipseInsideWeight(nx, ny, 0.375, 0.149, 0.028, 0.022, 0.09),
+        ellipseInsideWeight(nx, ny, 0.632, 0.149, 0.028, 0.022, 0.09),
+        boxInsideWeight(nx, ny, 0.408, 0.602, 0.190, 0.256, 0.012, 0.008)
+      );
+      return base * (1 - isYellowBlondeBang);
+    }
+    case 'avatar-female-2':
+      return Math.max(
+        ellipseInsideWeight(nx, ny, 0.504, 0.140, 0.111, 0.061, 0.06),
+        ellipseInsideWeight(nx, ny, 0.370, 0.137, 0.024, 0.022, 0.09),
+        ellipseInsideWeight(nx, ny, 0.638, 0.137, 0.028, 0.024, 0.09),
+        boxInsideWeight(nx, ny, 0.422, 0.600, 0.182, 0.242, 0.009, 0.008)
+      );
+    case 'avatar-female-3':
+      return Math.max(
+        ellipseInsideWeight(nx, ny, 0.500, 0.129, 0.113, 0.064, 0.06),
+        ellipseInsideWeight(nx, ny, 0.500, 0.135, 0.124, 0.020, 0.08),
+        boxInsideWeight(nx, ny, 0.414, 0.586, 0.178, 0.234, 0.010, 0.008)
+      );
+    case 'avatar-female-4':
+      return Math.max(
+        ellipseInsideWeight(nx, ny, 0.500, 0.123, 0.113, 0.064, 0.06),
+        ellipseInsideWeight(nx, ny, 0.360, 0.123, 0.021, 0.019, 0.09),
+        ellipseInsideWeight(nx, ny, 0.640, 0.123, 0.021, 0.019, 0.09),
+        boxInsideWeight(nx, ny, 0.416, 0.584, 0.174, 0.230, 0.010, 0.008)
+      );
+    case 'avatar-male-1':
+    default:
+      return Math.max(
+        ellipseInsideWeight(nx, ny, 0.500, 0.129, 0.106, 0.061, 0.06),
+        ellipseInsideWeight(nx, ny, 0.500, 0.136, 0.148, 0.025, 0.08),
+        boxInsideWeight(nx, ny, 0.415, 0.585, 0.175, 0.232, 0.012, 0.008)
+      );
+  }
+}
+
 function computeHairMaskWeight(avatarId, nx, ny, hue, sat, lum) {
-  // Never tint navy/blue jersey, collar, or hair-tie pixels as hair
   if (hue >= 184 && hue <= 254 && sat >= 0.13) {
     return 0;
   }
 
   let inHairZone = 0;
-  let skinKeepOut = 0;
-
   switch (avatarId) {
     case 'avatar-male-2': {
-      // High buzz/fade: hair strictly on top crown + outer upper temple fade
       const crown = boxInsideWeight(nx, ny, 0.34, 0.66, 0.008, 0.056, 0.012, 0.004);
       const temples = (boxInsideWeight(nx, ny, 0.335, 0.388, 0.052, 0.098, 0.008, 0.005) +
                        boxInsideWeight(nx, ny, 0.612, 0.665, 0.052, 0.098, 0.008, 0.005)) *
                       (1 - smoothstep(0.14, 0.22, lum));
       inHairZone = Math.min(1, crown + temples);
-      skinKeepOut = Math.max(
-        ellipseInsideWeight(nx, ny, 0.500, 0.126, 0.124, 0.070, 0.06),
-        ellipseInsideWeight(nx, ny, 0.500, 0.126, 0.170, 0.030, 0.08),
-        boxInsideWeight(nx, ny, 0.380, 0.620, 0.168, 0.240, 0.012, 0.008)
-      );
       break;
     }
     case 'avatar-male-3': {
-      // Mohawk / faux-hawk crest + tight faded temples
       const crest = boxInsideWeight(nx, ny, 0.345, 0.655, 0.006, 0.079, 0.012, 0.004);
       const temples = (boxInsideWeight(nx, ny, 0.345, 0.392, 0.075, 0.116, 0.008, 0.005) +
                        boxInsideWeight(nx, ny, 0.608, 0.655, 0.075, 0.116, 0.008, 0.005)) *
                       (1 - smoothstep(0.16, 0.25, lum));
       inHairZone = Math.min(1, crest + temples);
-      skinKeepOut = Math.max(
-        ellipseInsideWeight(nx, ny, 0.500, 0.139, 0.119, 0.060, 0.06),
-        ellipseInsideWeight(nx, ny, 0.500, 0.142, 0.170, 0.028, 0.08),
-        boxInsideWeight(nx, ny, 0.380, 0.620, 0.178, 0.242, 0.012, 0.008)
-      );
       break;
     }
-    case 'avatar-male-4': {
-      // Side-part short cut + neat sideburns above ears
+    case 'avatar-male-4':
       inHairZone = boxInsideWeight(nx, ny, 0.260, 0.740, 0.004, 0.128, 0.012, 0.005);
-      skinKeepOut = Math.max(
-        ellipseInsideWeight(nx, ny, 0.500, 0.134, 0.115, 0.060, 0.06),
-        ellipseInsideWeight(nx, ny, 0.500, 0.136, 0.172, 0.024, 0.08),
-        boxInsideWeight(nx, ny, 0.380, 0.620, 0.174, 0.240, 0.012, 0.008)
-      );
       break;
-    }
     case 'avatar-female-1': {
-      // High blonde ponytail sweeping left + diagonal parted bangs (blonde H=36..55 vs peach skin H=6..28)
       const upper = boxInsideWeight(nx, ny, 0.060, 0.740, 0.004, 0.160, 0.010, 0.005);
       const ponyTailLower = boxInsideWeight(nx, ny, 0.060, 0.402, 0.145, 0.224, 0.010, 0.005);
       inHairZone = Math.max(upper, ponyTailLower);
-      const isYellowBlondeBang = (ny < 0.126) ? smoothstep(29, 36, hue) * smoothstep(0.28, 0.42, sat) : 0;
-      const baseFaceKeepOut = Math.max(
-        ellipseInsideWeight(nx, ny, 0.512, 0.149, 0.110, 0.058, 0.06),
-        ellipseInsideWeight(nx, ny, 0.375, 0.149, 0.028, 0.022, 0.09),
-        ellipseInsideWeight(nx, ny, 0.632, 0.149, 0.028, 0.022, 0.09),
-        boxInsideWeight(nx, ny, 0.408, 0.602, 0.190, 0.264, 0.012, 0.008),
-        boxInsideWeight(nx, ny, 0.580, 0.750, 0.152, 0.240, 0.010, 0.008)
-      );
-      skinKeepOut = baseFaceKeepOut * (1 - isYellowBlondeBang);
       break;
     }
     case 'avatar-female-2': {
-      // Crown braids + long cascading braids over viewer-left chest down to ny ~ 0.36
       const crown = boxInsideWeight(nx, ny, 0.180, 0.680, 0.004, 0.145, 0.010, 0.005);
       const cascade = boxInsideWeight(nx, ny, 0.180, 0.425, 0.132, 0.362, 0.010, 0.006);
       inHairZone = Math.max(crown, cascade);
-      skinKeepOut = Math.max(
-        ellipseInsideWeight(nx, ny, 0.504, 0.140, 0.111, 0.061, 0.06),
-        ellipseInsideWeight(nx, ny, 0.370, 0.137, 0.024, 0.022, 0.09),
-        ellipseInsideWeight(nx, ny, 0.638, 0.137, 0.028, 0.024, 0.09),
-        boxInsideWeight(nx, ny, 0.422, 0.600, 0.182, 0.246, 0.009, 0.008)
-      );
       break;
     }
-    case 'avatar-female-3': {
-      // Wavy shoulder-length hair framing both sides down to collar/shoulders
+    case 'avatar-female-3':
       inHairZone = boxInsideWeight(nx, ny, 0.160, 0.840, 0.004, 0.220, 0.010, 0.005);
-      skinKeepOut = Math.max(
-        ellipseInsideWeight(nx, ny, 0.500, 0.129, 0.113, 0.064, 0.06),
-        ellipseInsideWeight(nx, ny, 0.500, 0.135, 0.124, 0.020, 0.08),
-        boxInsideWeight(nx, ny, 0.414, 0.586, 0.178, 0.238, 0.010, 0.008)
-      );
       break;
-    }
     case 'avatar-female-4': {
-      // Crown braided part + twin braids cascading over both shoulders down to ny ~ 0.335
       const crown = boxInsideWeight(nx, ny, 0.250, 0.750, 0.004, 0.112, 0.010, 0.005);
       const leftBraid = boxInsideWeight(nx, ny, 0.295, 0.418, 0.100, 0.338, 0.010, 0.006);
       const rightBraid = boxInsideWeight(nx, ny, 0.582, 0.705, 0.100, 0.338, 0.010, 0.006);
       inHairZone = Math.max(crown, leftBraid, rightBraid);
-      skinKeepOut = Math.max(
-        ellipseInsideWeight(nx, ny, 0.500, 0.123, 0.113, 0.064, 0.06),
-        ellipseInsideWeight(nx, ny, 0.360, 0.123, 0.021, 0.019, 0.09),
-        ellipseInsideWeight(nx, ny, 0.640, 0.123, 0.021, 0.019, 0.09),
-        boxInsideWeight(nx, ny, 0.416, 0.584, 0.174, 0.232, 0.010, 0.008)
-      );
       break;
     }
     case 'avatar-male-1':
-    default: {
-      // Classic parted hockey flow wrapping behind ears to collar
+    default:
       inHairZone = boxInsideWeight(nx, ny, 0.180, 0.820, 0.004, 0.204, 0.010, 0.005);
-      skinKeepOut = Math.max(
-        ellipseInsideWeight(nx, ny, 0.500, 0.129, 0.106, 0.061, 0.06),
-        ellipseInsideWeight(nx, ny, 0.500, 0.136, 0.148, 0.025, 0.08),
-        boxInsideWeight(nx, ny, 0.415, 0.585, 0.175, 0.236, 0.012, 0.008)
-      );
       break;
-    }
   }
 
+  let skinKeepOut = computeSkinZoneEnvelope(avatarId, nx, ny, hue, sat);
+  if (avatarId === 'avatar-female-1') {
+    skinKeepOut = Math.max(skinKeepOut, boxInsideWeight(nx, ny, 0.580, 0.750, 0.152, 0.240, 0.010, 0.008));
+  }
   return Math.max(0, Math.min(1, inHairZone * (1 - skinKeepOut)));
 }
 
-/**
- * Painted Jersey / Sweater Classifier:
- * Isolates navy-blue sweater cloth pixels across torso, shoulders, and sleeves while
- * excluding skin, chest braids, silver puck crest/stripes (`low S`), gloves (`ny > 0.438` on arms),
- * breezers/pants (`ny > 0.522`), and skates.
- */
 function computeJerseyMaskWeight(nx, ny, hue, sat) {
   if (ny < 0.188 || ny > 0.530) return 0;
-
-  // Hue window around painted navy sweater (`186°..252°`) with smooth rolloff
   const hueIn = smoothstep(182, 194, hue) * (1 - smoothstep(244, 256, hue));
   if (hueIn <= 0.001) return 0;
-
-  // Saturation ramp preserves silver puck crest & white/silver shoulder/sleeve/hem stripes
   const satIn = smoothstep(0.115, 0.205, sat);
   if (satIn <= 0.001) return 0;
 
-  // Spatial union: Torso (`0.244..0.756`, `ny <= 0.522`) + Sleeves above glove cuffs (`ny <= 0.438`)
   const torsoSpatial = boxInsideWeight(nx, ny, 0.244, 0.756, 0.192, 0.522, 0.010, 0.006);
-  const sleeveSpatial = boxInsideWeight(nx, ny, 0.050, 0.950, 0.195, 0.438, 0.010, 0.007);
+  const sleeveSpatial = boxInsideWeight(nx, ny, 0.050, 0.950, 0.195, 0.435, 0.010, 0.007);
   const spatial = Math.max(torsoSpatial, sleeveSpatial);
-
-  // Exclude top ponytail hair tie (`ny < 0.195`) and twin braid ties (`avatar-female-4` at `ny ~ 0.245`)
   return Math.max(0, Math.min(1, spatial * hueIn * satIn));
 }
 
 /**
- * Computes contrast-preserving Hair HSL target parameters for a given hex color & base avatar.
+ * Painted 4-Roll Gloves Classifier on Skater's Hands (`ny = 0.436 .. 0.610`, left/right outer hands)
  */
+function computeGlovesMaskWeight(nx, ny, hue, sat) {
+  if (ny < 0.436 || ny > 0.612) return 0;
+  const inLeftHand = boxInsideWeight(nx, ny, 0.015, 0.240, 0.438, 0.608, 0.010, 0.006);
+  const inRightHand = boxInsideWeight(nx, ny, 0.760, 0.985, 0.438, 0.608, 0.010, 0.006);
+  const handSpatial = Math.max(inLeftHand, inRightHand);
+  if (handSpatial <= 0.001) return 0;
+
+  const hueIn = smoothstep(180, 194, hue) * (1 - smoothstep(246, 258, hue));
+  const satIn = smoothstep(0.10, 0.19, sat);
+  return Math.max(0, Math.min(1, handSpatial * hueIn * satIn));
+}
+
 function resolveHairTintProfile(hairHex, hairBaseLum = 0.30) {
   const [tr, tg, tb] = parseHexRgb(hairHex, [120, 53, 15]);
   const [th, ts, tl] = rgbToHsl(tr, tg, tb);
   const hexLow = String(hairHex || '').toLowerCase();
 
-  // Platinum / Silver-Ice (`#e2e8f0`)
   if (hexLow === '#e2e8f0' || (ts < 0.22 && tl > 0.75)) {
     const desiredMid = 0.66;
     const gamma = Math.max(0.38, Math.min(1.15, Math.log(desiredMid) / Math.log(Math.max(0.08, hairBaseLum))));
     return { hue: 214, sat: 0.14, gamma, scale: 0.96, lift: 0.06 };
   }
-
-  // Raven Black (`#111827` / `#0f172a`)
   if (hexLow === '#111827' || hexLow === '#0f172a' || tl < 0.12) {
     const desiredMid = 0.11;
     const gamma = Math.max(1.05, Math.min(2.35, Math.log(desiredMid) / Math.log(Math.max(0.08, Math.min(0.85, hairBaseLum)))));
     return { hue: 218, sat: 0.18, gamma, scale: 0.82, lift: 0.01 };
   }
-
-  // Blonde (`#facc15`)
   if (hexLow === '#facc15' || (th >= 38 && th <= 58 && tl > 0.45)) {
     const desiredMid = 0.56;
     const gamma = Math.max(0.42, Math.min(1.15, Math.log(desiredMid) / Math.log(Math.max(0.08, hairBaseLum))));
     return { hue: 43, sat: 0.74, gamma, scale: 0.98, lift: 0.02 };
   }
-
-  // Natural Chestnut Brown (`#78350f`)
   if (hexLow === '#78350f' || (th >= 18 && th <= 36 && tl < 0.35)) {
     const desiredMid = 0.25;
     const gamma = Math.max(0.68, Math.min(1.55, Math.log(desiredMid) / Math.log(Math.max(0.08, hairBaseLum))));
     return { hue: 25, sat: 0.62, gamma, scale: 0.96, lift: 0.0 };
   }
 
-  // Vibrant Red / Blue / Cyan / Custom Hair Colors
   const desiredMid = Math.max(0.34, Math.min(0.50, tl));
   const gamma = Math.max(0.48, Math.min(1.38, Math.log(desiredMid) / Math.log(Math.max(0.08, hairBaseLum))));
   return {
@@ -379,36 +368,47 @@ function resolveHairTintProfile(hairHex, hairBaseLum = 0.30) {
   };
 }
 
-/**
- * Computes luminance-preserving Jersey HSL target parameters for a given sweater hex color.
- */
 function resolveJerseyTintProfile(jerseyHex) {
   const [tr, tg, tb] = parseHexRgb(jerseyHex, [2, 132, 199]);
   const [th, ts, tl] = rgbToHsl(tr, tg, tb);
   const hexLow = String(jerseyHex || '').toLowerCase();
 
-  // Stealth Blackout Sweater (`#111827` / `#0f172a`)
   if (hexLow === '#111827' || hexLow === '#0f172a' || tl < 0.12) {
     return { hue: 216, sat: 0.14, gamma: 1.32, scale: 0.88 };
   }
-
-  // Gold Sweater (`#eab308` / `#facc15`)
   if (hexLow === '#eab308' || hexLow === '#facc15' || (th >= 38 && th <= 56 && ts > 0.5)) {
     return { hue: 45, sat: 0.84, gamma: 0.72, scale: 1.04 };
   }
-
-  // Pink Sweater (`#ec4899`)
   if (hexLow === '#ec4899') {
     return { hue: 330, sat: 0.80, gamma: 0.76, scale: 1.03 };
   }
-
-  // General vibrant team sweater (`Royal Blue`, `Red`, `Teal`, `Emerald`, `Purple`, etc.)
   return {
     hue: th,
     sat: Math.max(0.66, Math.min(0.84, ts * 0.94)),
     gamma: 0.82,
     scale: 1.02
   };
+}
+
+function resolveSkinToneProfile(skinToneOverride, skinBaseLum = 0.56) {
+  if (!skinToneOverride) return null;
+  const low = String(skinToneOverride).trim().toLowerCase();
+  let desiredMid = 0.62;
+  let targetHue = 22;
+  let targetSat = 0.42;
+  if (low === '#fde68a' || low === 'fair') {
+    desiredMid = 0.72; targetHue = 24; targetSat = 0.36;
+  } else if (low === '#fdba74' || low === 'peach') {
+    desiredMid = 0.62; targetHue = 20; targetSat = 0.44;
+  } else if (low === '#d97706' || low === 'tan') {
+    desiredMid = 0.47; targetHue = 23; targetSat = 0.52;
+  } else if (low === '#78350f' || low === 'deep') {
+    desiredMid = 0.25; targetHue = 21; targetSat = 0.52;
+  } else {
+    return null;
+  }
+  const gamma = Math.max(0.55, Math.min(1.65, Math.log(desiredMid) / Math.log(Math.max(0.16, skinBaseLum))));
+  return { hue: targetHue, sat: targetSat, gamma };
 }
 
 function loadRawAvatarImage(avatarMeta) {
@@ -440,19 +440,21 @@ function loadRawAvatarImage(avatarMeta) {
 
 export function preloadAllPaintedAvatars() {
   if (typeof Image === 'undefined') return Promise.resolve([]);
-  return Promise.all(PAINTED_SKATER_CATALOG.map((meta) => loadRawAvatarImage(meta)));
+  return Promise.all([
+    ...PAINTED_SKATER_CATALOG.map((meta) => loadRawAvatarImage(meta)),
+    preloadAllPaintedGearArt().catch(() => [])
+  ]);
 }
 
-// Eagerly start preloading painted character PNGs in browser environments
 if (typeof window !== 'undefined' && typeof Image !== 'undefined') {
   preloadAllPaintedAvatars().catch(() => {});
 }
 
-function buildTintedBitmapFromImage(img, avatarMeta, hairColorHex, jerseyColorHex) {
-  const cacheKey = `${avatarMeta.id}|${hairColorHex.toLowerCase()}|${jerseyColorHex.toLowerCase()}`;
-  const hit = _tintedBitmapCache.get(cacheKey);
+function buildTintedBitmapFromImage(img, cfg) {
+  const hit = _tintedBitmapCache.get(cfg.cacheKey);
   if (hit) return hit;
 
+  const avatarMeta = cfg.avatarMeta;
   const w = img.naturalWidth || 374;
   const h = img.naturalHeight || 900;
   const off = document.createElement('canvas');
@@ -466,15 +468,26 @@ function buildTintedBitmapFromImage(img, avatarMeta, hairColorHex, jerseyColorHe
   const imgData = ctx.getImageData(0, 0, w, h);
   const px = imgData.data;
 
-  const hairProf = resolveHairTintProfile(hairColorHex, avatarMeta.hairBaseLum || 0.30);
-  const jerseyProf = resolveJerseyTintProfile(jerseyColorHex);
+  const hairProf = resolveHairTintProfile(cfg.hairColor, avatarMeta.hairBaseLum || 0.30);
+  const jerseyProf = resolveJerseyTintProfile(cfg.jerseyColor);
+  const glovesProf = resolveJerseyTintProfile(cfg.glovesColor || cfg.jerseyColor);
+  const glovesAccProf = resolveJerseyTintProfile(cfg.glovesAccent || cfg.glovesColor || cfg.jerseyColor);
+  const skinProf = resolveSkinToneProfile(cfg.skinToneOverride, avatarMeta.skinBaseLum || 0.56);
+
+  const skateStyle = String(cfg.skatesItem?.style || '').toLowerCase();
+  const hasCustomSkates = cfg.skatesId && cfg.skatesId !== 'starter-skates';
+  const skateSteelMode = !hasCustomSkates
+    ? 'chrome'
+    : (skateStyle.includes('black-steel') ? 'black' : (skateStyle.includes('gold-steel') ? 'gold' : (skateStyle.includes('blue-steel') ? 'blue' : 'chrome')));
+  const skateTrimProf = hasCustomSkates ? resolveJerseyTintProfile(cfg.skatesItem?.color || '#38bdf8') : null;
+
   const invW = 1 / w;
   const invH = 1 / h;
 
   for (let y = 0; y < h; y++) {
     const ny = (y + 0.5) * invH;
-    // Fast skip below sweater bottom (`ny > 0.532` is breezers, socks, and skates — 100% untouched!)
-    if (ny > 0.532) continue;
+    // Breezers & socks (`0.615 < ny < 0.820`) stay untouched
+    if (ny > 0.614 && (!hasCustomSkates || ny < 0.820)) continue;
 
     const rowOffset = y * w * 4;
     for (let x = 0; x < w; x++) {
@@ -488,27 +501,45 @@ function buildTintedBitmapFromImage(img, avatarMeta, hairColorHex, jerseyColorHe
       const nx = (x + 0.5) * invW;
       const [hue, sat, lum] = rgbToHsl(r, g, b);
 
-      // 1. Hair Region Check (`ny <= 0.370` covers long chest braids on Skater 6 & Skater 8)
-      let wHair = 0;
+      // 1. Hair Region (`ny <= 0.370`)
       if (ny <= 0.370) {
-        wHair = computeHairMaskWeight(avatarMeta.id, nx, ny, hue, sat, lum);
+        const wHair = computeHairMaskWeight(avatarMeta.id, nx, ny, hue, sat, lum);
+        if (wHair > 0.005) {
+          const specFade = 1 - smoothstep(0.68, 0.90, lum) * 0.55;
+          const curvedL = Math.max(0.025, Math.min(0.94, Math.pow(Math.max(0.005, lum), hairProf.gamma) * hairProf.scale + hairProf.lift));
+          const outSat = Math.max(0.04, Math.min(0.92, (hairProf.sat * 0.78 + sat * 0.22) * specFade));
+          const [nr, ng, nb] = hslToRgb(hairProf.hue, outSat, curvedL);
+          px[i]     = Math.round(r + (nr - r) * wHair);
+          px[i + 1] = Math.round(g + (ng - g) * wHair);
+          px[i + 2] = Math.round(b + (nb - b) * wHair);
+          continue;
+        }
+
+        // 1b. Optional Explicit Skin Tone Shift (excludes eye whites, irises, dark brows/lashes, and teeth)
+        if (skinProf && ny >= 0.075 && ny <= 0.260) {
+          const env = computeSkinZoneEnvelope(avatarMeta.id, nx, ny, hue, sat);
+          const isWarmSkinPixel = (hue <= 42 || hue >= 342) && sat >= 0.16 && lum >= 0.16 && lum <= 0.84;
+          // Exclude eye band (`ny ~ 0.118..0.142` around eye sockets) where sclera/irises sit
+          const eyeBandKeepOut = Math.max(
+            ellipseInsideWeight(nx, ny, 0.452, 0.132, 0.032, 0.014, 0.15),
+            ellipseInsideWeight(nx, ny, 0.548, 0.132, 0.032, 0.014, 0.15),
+            ellipseInsideWeight(nx, ny, 0.500, 0.163, 0.038, 0.010, 0.15)
+          );
+          const wSkin = isWarmSkinPixel ? env * (1 - eyeBandKeepOut) * 0.85 : 0;
+          if (wSkin > 0.01) {
+            const curvedL = Math.max(0.06, Math.min(0.90, Math.pow(Math.max(0.02, lum), skinProf.gamma)));
+            const outS = Math.max(0.14, Math.min(0.72, skinProf.sat * 0.65 + sat * 0.35));
+            const [sr, sg, sb] = hslToRgb(skinProf.hue, outS, curvedL);
+            px[i]     = Math.round(r + (sr - r) * wSkin);
+            px[i + 1] = Math.round(g + (sg - g) * wSkin);
+            px[i + 2] = Math.round(b + (sb - b) * wSkin);
+            continue;
+          }
+        }
       }
 
-      if (wHair > 0.005) {
-        // Preserve specular hair highlights (`lum > 0.72` desaturates naturally toward white sheen)
-        const specFade = 1 - smoothstep(0.68, 0.90, lum) * 0.55;
-        const curvedL = Math.max(0.025, Math.min(0.94, Math.pow(Math.max(0.005, lum), hairProf.gamma) * hairProf.scale + hairProf.lift));
-        // Preserve strand-level saturation micro-variation while shifting to target hair chroma
-        const outSat = Math.max(0.04, Math.min(0.92, (hairProf.sat * 0.78 + sat * 0.22) * specFade));
-        const [nr, ng, nb] = hslToRgb(hairProf.hue, outSat, curvedL);
-        px[i]     = Math.round(r + (nr - r) * wHair);
-        px[i + 1] = Math.round(g + (ng - g) * wHair);
-        px[i + 2] = Math.round(b + (nb - b) * wHair);
-        continue;
-      }
-
-      // 2. Sweater / Jersey Region Check (`0.188 <= ny <= 0.530`)
-      if (ny >= 0.188) {
+      // 2. Sweater / Jersey Region (`0.188 <= ny <= 0.530`)
+      if (ny >= 0.188 && ny <= 0.530) {
         const wJersey = computeJerseyMaskWeight(nx, ny, hue, sat);
         if (wJersey > 0.005) {
           const foldHighlightFade = 1 - smoothstep(0.62, 0.88, lum) * 0.45;
@@ -518,20 +549,60 @@ function buildTintedBitmapFromImage(img, avatarMeta, hairColorHex, jerseyColorHe
           px[i]     = Math.round(r + (nr - r) * wJersey);
           px[i + 1] = Math.round(g + (ng - g) * wJersey);
           px[i + 2] = Math.round(b + (nb - b) * wJersey);
+          continue;
+        }
+      }
+
+      // 3. Painted 4-Roll Hockey Gloves on Skater's Hands (`0.436 <= ny <= 0.612`)
+      if (ny >= 0.436 && ny <= 0.612) {
+        const wGlove = computeGlovesMaskWeight(nx, ny, hue, sat);
+        if (wGlove > 0.005) {
+          const isUpperCuffRim = ny < 0.466 && cfg.glovesId !== 'starter-gloves';
+          const prof = isUpperCuffRim ? glovesAccProf : glovesProf;
+          const foldFade = 1 - smoothstep(0.64, 0.88, lum) * 0.42;
+          const curvedL = Math.max(0.03, Math.min(0.92, Math.pow(Math.max(0.008, lum), prof.gamma) * prof.scale));
+          const outSat = Math.max(0.06, Math.min(0.90, (prof.sat * 0.84 + sat * 0.16) * foldFade));
+          const [gr, gg, gb] = hslToRgb(prof.hue, outSat, curvedL);
+          px[i]     = Math.round(r + (gr - r) * wGlove);
+          px[i + 1] = Math.round(g + (gg - g) * wGlove);
+          px[i + 2] = Math.round(b + (gb - b) * wGlove);
+          continue;
+        }
+      }
+
+      // 4. Painted Skates Trim & Steel Runner (`ny >= 0.820` when Pro Shop skates equipped/tried on)
+      if (hasCustomSkates && ny >= 0.820) {
+        if (ny >= 0.932 && skateSteelMode !== 'chrome' && lum > 0.28 && sat < 0.24) {
+          let sr = r, sg = g, sb = b;
+          if (skateSteelMode === 'black') [sr, sg, sb] = hslToRgb(212, 0.22, lum * 0.34 + 0.04);
+          else if (skateSteelMode === 'gold') [sr, sg, sb] = hslToRgb(45, 0.88, Math.min(0.88, lum * 1.02));
+          else if (skateSteelMode === 'blue') [sr, sg, sb] = hslToRgb(197, 0.86, Math.min(0.86, lum * 0.98));
+          px[i]     = Math.round(r + (sr - r) * 0.88);
+          px[i + 1] = Math.round(g + (sg - g) * 0.88);
+          px[i + 2] = Math.round(b + (sb - b) * 0.88);
+        } else if (skateTrimProf && ny >= 0.822 && ny < 0.865 && lum > 0.45 && sat < 0.22) {
+          // Ankle collar trim highlight
+          const [tr, tg, tb] = hslToRgb(skateTrimProf.hue, skateTrimProf.sat, Math.min(0.82, lum * 0.88));
+          px[i]     = Math.round(r + (tr - r) * 0.72);
+          px[i + 1] = Math.round(g + (tg - g) * 0.72);
+          px[i + 2] = Math.round(b + (tb - b) * 0.72);
         }
       }
     }
   }
 
   ctx.putImageData(imgData, 0, 0);
-  _tintedBitmapCache.set(cacheKey, off);
+  _tintedBitmapCache.set(cfg.cacheKey, off);
   return off;
 }
 
 function resolveCatalogItem(idOrVal, category) {
   if (!idOrVal) return null;
+  const valStr = String(idOrVal).trim();
+  // Never confuse a raw starter #hex color string (e.g. slotProfile.equippedHelmet = '#0284c7') with a Pro Shop SKU!
+  if (!valStr || valStr.startsWith('#') || valStr.startsWith('starter-')) return null;
   const shop = (typeof window !== 'undefined' && Array.isArray(window.PRO_SHOP_ITEMS)) ? window.PRO_SHOP_ITEMS : [];
-  return shop.find((it) => it.id === idOrVal || (category && it.category === category && (it.color === idOrVal || it.style === idOrVal))) || null;
+  return shop.find((it) => it.id === valStr || (category && it.category === category && it.style === valStr)) || null;
 }
 
 function resolveAvatarMetaFromState(s = {}) {
@@ -539,15 +610,14 @@ function resolveAvatarMetaFromState(s = {}) {
   const byId = PAINTED_SKATER_CATALOG.find((a) => a.id === explicitId);
   if (byId) return byId;
 
-  // Fallback mapping from hairStyle / avatarType if stockAvatarId wasn't explicitly specified
   const style = String(s.hairStyle || '').toLowerCase();
   const isGirl = String(s.avatarType || s.charType || '').toLowerCase() === 'girl';
-  if (style === 'ponytail') return PAINTED_SKATER_CATALOG[4]; // avatar-female-1
-  if (style === 'braids') return PAINTED_SKATER_CATALOG[5];   // avatar-female-2
-  if (style === 'mohawk') return PAINTED_SKATER_CATALOG[2];   // avatar-male-3
-  if (style === 'buzz') return PAINTED_SKATER_CATALOG[1];     // avatar-male-2
-  if (style === 'short' || style === 'fade') return PAINTED_SKATER_CATALOG[3]; // avatar-male-4
-  if (style === 'curly' && isGirl) return PAINTED_SKATER_CATALOG[6]; // avatar-female-3
+  if (style === 'ponytail') return PAINTED_SKATER_CATALOG[4];
+  if (style === 'braids') return PAINTED_SKATER_CATALOG[5];
+  if (style === 'mohawk') return PAINTED_SKATER_CATALOG[2];
+  if (style === 'buzz') return PAINTED_SKATER_CATALOG[1];
+  if (style === 'short' || style === 'fade') return PAINTED_SKATER_CATALOG[3];
+  if (style === 'curly') return PAINTED_SKATER_CATALOG[6];
   return isGirl ? PAINTED_SKATER_CATALOG[4] : PAINTED_SKATER_CATALOG[0];
 }
 
@@ -571,6 +641,7 @@ export function normalizeSkaterState(rawState = {}, previewItem = null) {
     } else if (cat === 'Helmet' || previewItem.slot === 'helmet') {
       s.equippedHelmet = previewItem.color;
       s.equippedHelmetId = previewItem.id;
+      s.equippedVisorId = previewItem.id;
       previewSlot = 'visor';
     } else if (cat === 'Visor' || previewItem.slot === 'visor') {
       s.equippedVisor = previewItem.color;
@@ -626,21 +697,25 @@ export function normalizeSkaterState(rawState = {}, previewItem = null) {
   const starterGloves = starters.find((x) => x.slot === 'gloves') || starters[1];
   const starterSkates = starters.find((x) => x.slot === 'skates') || starters[3];
 
-  const glovesMeta = resolveCatalogItem(s.equippedGlovesId || s.equippedGloves, 'Gloves');
-  const stickMeta = resolveCatalogItem(s.equippedStickId || s.equippedStick, 'Stick');
-  const helmetMeta = resolveCatalogItem(s.equippedHelmetId || s.equippedHelmet, 'Helmet');
-  const visorMeta = resolveCatalogItem(s.equippedVisorId || s.equippedVisor, 'Visor');
-  const skateMeta = resolveCatalogItem(s.equippedSkatesId || s.equippedSkates || s.equippedSkate, 'Skates');
+  const glovesMeta = (previewSlot === 'gloves' && previewItem) ? previewItem : resolveCatalogItem(s.equippedGlovesId || s.equippedGloves, 'Gloves');
+  const stickMeta = (previewSlot === 'stick' && previewItem) ? previewItem : resolveCatalogItem(s.equippedStickId || s.equippedStick, 'Stick');
+  const helmetMeta = (previewSlot === 'visor' && previewItem?.category === 'Helmet') ? previewItem : resolveCatalogItem(s.equippedHelmetId || s.equippedHelmet, 'Helmet');
+  const visorMeta = (previewSlot === 'visor' && previewItem?.category !== 'Helmet' && previewItem) ? previewItem : resolveCatalogItem(s.equippedVisorId || s.equippedVisor, 'Visor');
+  const skateMeta = (previewSlot === 'skates' && previewItem) ? previewItem : resolveCatalogItem(s.equippedSkatesId || s.equippedSkates || s.equippedSkate, 'Skates');
 
-  const visorItem = visorMeta || helmetMeta || starterVisor;
+  const visorItem = (previewSlot === 'visor' && previewItem) ? previewItem : (visorMeta || helmetMeta || starterVisor);
   const stickItem = stickMeta || starterStick;
   const glovesItem = glovesMeta || starterGloves;
   const skatesItem = skateMeta || starterSkates;
 
-  const visorId = s.equippedVisorId || (visorMeta && visorMeta.id) || (helmetMeta && helmetMeta.id) || 'starter-visor';
-  const stickId = s.equippedStickId || (stickMeta && stickMeta.id) || 'starter-stick';
-  const glovesId = s.equippedGlovesId || (glovesMeta && glovesMeta.id) || 'starter-gloves';
-  const skatesId = s.equippedSkatesId || s.equippedSkates || (skateMeta && skateMeta.id) || 'starter-skates';
+  const visorId = (previewSlot === 'visor' && previewItem?.id) || s.equippedVisorId || (visorMeta && visorMeta.id) || (helmetMeta && helmetMeta.id) || 'starter-visor';
+  const stickId = (previewSlot === 'stick' && previewItem?.id) || s.equippedStickId || (stickMeta && stickMeta.id) || 'starter-stick';
+  const glovesId = (previewSlot === 'gloves' && previewItem?.id) || s.equippedGlovesId || (glovesMeta && glovesMeta.id) || 'starter-gloves';
+  const skatesId = (previewSlot === 'skates' && previewItem?.id) || s.equippedSkatesId || s.equippedSkates || (skateMeta && skateMeta.id) || 'starter-skates';
+
+  const glovesColor = glovesMeta?.color || jerseyColor;
+  const glovesAccent = glovesMeta?.accentColor || '#eab308';
+  const skinToneOverride = s.skinToneExplicit ? String(s.skinTone || '') : '';
 
   return {
     profileId: s.id || 'skater',
@@ -655,8 +730,11 @@ export function normalizeSkaterState(rawState = {}, previewItem = null) {
     hairStyle: s.hairStyle || avatarMeta.defaultHairStyle || 'flow',
     hairColor,
     skinTone: s.skinTone || '#fdba74',
+    skinToneOverride,
     jerseyColor,
     jerseyAccent,
+    glovesColor,
+    glovesAccent,
     visorId,
     stickId,
     glovesId,
@@ -666,23 +744,271 @@ export function normalizeSkaterState(rawState = {}, previewItem = null) {
     glovesItem,
     skatesItem,
     previewSlot,
-    cacheKey: `${avatarMeta.id}|${hairColor.toLowerCase()}|${jerseyColor.toLowerCase()}`
+    cacheKey: `${avatarMeta.id}|${hairColor.toLowerCase()}|${jerseyColor.toLowerCase()}|${glovesColor.toLowerCase()}|${glovesId}|${skatesId}|${skinToneOverride}`
   };
 }
 
 function classifySpinView(angleDeg = 0) {
   const norm = ((Number(angleDeg) || 0) % 360 + 360) % 360;
-  if (norm >= 95 && norm <= 265) {
+  if (norm >= 90 && norm <= 270) {
     return { normAngle: norm, face: 'back' };
   }
   return { normAngle: norm, face: 'front' };
 }
 
 /**
- * Draws the cached painted & HSL-tinted character onto a high-DPI target `<canvas>`
- * (`devicePixelRatio` scaled, `imageSmoothingEnabled = true`).
+ * Draws calibrated Snug Studio-Lit 3D Pro Hockey Bucket + Wave-Cut Translucent Iridium Shield / Chrome Cage
+ * directly over the painted skater's head/brow zone whenever a non-starter Helmet/Visor/Cage is equipped or tried on!
  */
-function paintSkaterOntoCanvas(canvasEl, tintedBitmap, cfg) {
+function paintEquippedHeadgearOverlay(ctx, outW, outH, cfg) {
+  const hasHeadgear = (cfg.visorId && cfg.visorId !== 'starter-visor') || cfg.previewSlot === 'visor';
+  if (!hasHeadgear) return;
+
+  const item = cfg.visorItem || {};
+  const style = String(item.style || '').toLowerCase();
+  const isCage = style.includes('cage');
+  const isBucketSku = item.category === 'Helmet';
+
+  // Calibrated snug head/temple anchor across all 8 painted avatars (`374x900` proportions: temple halfW ~ 0.113)
+  const cx = outW * 0.502;
+  const crownTopY = outH * 0.024;
+  const browY = outH * 0.103;
+  const visorSideBotY = outH * 0.148;
+  const visorNoseArchY = outH * 0.137;
+  const halfW = outW * 0.132;
+
+  const shellBaseHex = isBucketSku
+    ? (item.color || '#1e3a8a')
+    : (style.includes('smoke') ? '#0f172a' : '#182234');
+  const shellSpecHex = adjustHex(shellBaseHex, 64, '#64748b');
+  const shellMidHex = adjustHex(shellBaseHex, 14, '#334155');
+  const shellDarkHex = adjustHex(shellBaseHex, -46, '#070b14');
+
+  ctx.save();
+
+  // 0) Soft ambient-occlusion shadow cast by the helmet brow onto the forehead skin
+  const browShadowGrad = ctx.createLinearGradient(0, browY - outH * 0.002, 0, browY + outH * 0.017);
+  browShadowGrad.addColorStop(0, 'rgba(2, 6, 23, 0.52)');
+  browShadowGrad.addColorStop(1, 'rgba(2, 6, 23, 0)');
+  ctx.fillStyle = browShadowGrad;
+  ctx.beginPath();
+  ctx.ellipse(cx, browY + outH * 0.006, halfW * 0.90, outH * 0.012, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // 1) Sculpted 3D Spherical Studio-Lit Pro Hockey Bucket Crown + Molded Temple Flanges (ZERO neon cartoon border!)
+  const shellGrad = ctx.createRadialGradient(
+    cx - halfW * 0.30, crownTopY + outH * 0.024, outW * 0.012,
+    cx, crownTopY + outH * 0.052, halfW * 1.35
+  );
+  shellGrad.addColorStop(0, shellSpecHex);
+  shellGrad.addColorStop(0.35, shellMidHex);
+  shellGrad.addColorStop(0.72, shellBaseHex);
+  shellGrad.addColorStop(1, shellDarkHex);
+
+  ctx.beginPath();
+  ctx.moveTo(cx - halfW * 0.98, browY + outH * 0.010);
+  ctx.bezierCurveTo(
+    cx - halfW * 1.04, crownTopY + outH * 0.012,
+    cx - halfW * 0.54, crownTopY,
+    cx, crownTopY
+  );
+  ctx.bezierCurveTo(
+    cx + halfW * 0.54, crownTopY,
+    cx + halfW * 1.04, crownTopY + outH * 0.012,
+    cx + halfW * 0.98, browY + outH * 0.010
+  );
+  // Snug temple ear-guard tabs
+  ctx.lineTo(cx + halfW * 1.01, browY + outH * 0.036);
+  ctx.lineTo(cx + halfW * 0.89, browY + outH * 0.038);
+  ctx.lineTo(cx + halfW * 0.85, browY + outH * 0.003);
+  ctx.quadraticCurveTo(cx, browY - outH * 0.006, cx - halfW * 0.85, browY + outH * 0.003);
+  ctx.lineTo(cx - halfW * 0.89, browY + outH * 0.038);
+  ctx.lineTo(cx - halfW * 1.01, browY + outH * 0.036);
+  ctx.closePath();
+
+  ctx.fillStyle = shellGrad;
+  ctx.fill();
+  ctx.lineWidth = Math.max(1.1, outW * 0.0032);
+  ctx.strokeStyle = 'rgba(6, 10, 18, 0.88)';
+  ctx.stroke();
+
+  // Subtle painted 3D aero ridge contour & recessed crown vents
+  ctx.beginPath();
+  ctx.moveTo(cx - halfW * 0.48, crownTopY + outH * 0.018);
+  ctx.quadraticCurveTo(cx, crownTopY + outH * 0.009, cx + halfW * 0.48, crownTopY + outH * 0.018);
+  ctx.strokeStyle = 'rgba(255, 255, 255, 0.30)';
+  ctx.lineWidth = Math.max(1.2, outW * 0.0036);
+  ctx.stroke();
+
+  ctx.fillStyle = 'rgba(4, 8, 16, 0.72)';
+  const ventW = halfW * 0.28;
+  const ventH = outH * 0.0065;
+  ctx.beginPath();
+  ctx.roundRect ? ctx.roundRect(cx - halfW * 0.48, crownTopY + outH * 0.031, ventW, ventH, 2) : ctx.rect(cx - halfW * 0.48, crownTopY + outH * 0.031, ventW, ventH);
+  ctx.roundRect ? ctx.roundRect(cx + halfW * 0.20, crownTopY + outH * 0.031, ventW, ventH, 2) : ctx.rect(cx + halfW * 0.20, crownTopY + outH * 0.031, ventW, ventH);
+  ctx.fill();
+
+  // 2) Authentic Wave-Cut Polycarbonate Iridium Visor Shield OR Metallic Chrome Pro Cage
+  if (isCage) {
+    const cageBotY = outH * 0.176;
+    const barGrad = ctx.createLinearGradient(cx - halfW, browY, cx + halfW, cageBotY);
+    barGrad.addColorStop(0, '#f8fafc');
+    barGrad.addColorStop(0.5, '#cbd5e1');
+    barGrad.addColorStop(1, '#64748b');
+
+    ctx.strokeStyle = barGrad;
+    ctx.lineWidth = Math.max(1.35, outW * 0.0038);
+
+    ctx.beginPath();
+    ctx.moveTo(cx - halfW * 0.92, browY + outH * 0.005);
+    ctx.quadraticCurveTo(cx - halfW * 0.86, cageBotY, cx, cageBotY + outH * 0.005);
+    ctx.quadraticCurveTo(cx + halfW * 0.86, cageBotY, cx + halfW * 0.92, browY + outH * 0.005);
+    ctx.stroke();
+
+    for (const frac of [0.25, 0.50, 0.75]) {
+      const by = browY + (cageBotY - browY) * frac;
+      const bw = halfW * (0.91 - frac * 0.16);
+      ctx.beginPath();
+      ctx.moveTo(cx - bw, by);
+      ctx.quadraticCurveTo(cx, by + outH * 0.005, cx + bw, by);
+      ctx.stroke();
+    }
+    for (const xFrac of [-0.52, -0.17, 0.17, 0.52]) {
+      ctx.beginPath();
+      ctx.moveTo(cx + halfW * xFrac, browY + outH * 0.004);
+      ctx.lineTo(cx + halfW * xFrac * 0.78, cageBotY);
+      ctx.stroke();
+    }
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = '#0f172a';
+    ctx.fillRect(cx - halfW * 0.30, cageBotY - outH * 0.009, halfW * 0.60, outH * 0.012);
+  } else {
+    // Oakley/Bauer Pro Wave-Cut Polycarbonate Shield (curved nose-bridge arch + translucent iridium reflection!)
+    const visGrad = ctx.createLinearGradient(cx - halfW, browY, cx + halfW, visorSideBotY);
+    if (style.includes('gold')) {
+      visGrad.addColorStop(0, 'rgba(254, 240, 138, 0.62)');
+      visGrad.addColorStop(0.45, 'rgba(245, 158, 11, 0.54)');
+      visGrad.addColorStop(1, 'rgba(180, 83, 9, 0.60)');
+    } else if (style.includes('smoke')) {
+      visGrad.addColorStop(0, 'rgba(71, 85, 105, 0.72)');
+      visGrad.addColorStop(0.52, 'rgba(15, 23, 42, 0.76)');
+      visGrad.addColorStop(1, 'rgba(2, 6, 23, 0.80)');
+    } else if (isBucketSku) {
+      visGrad.addColorStop(0, 'rgba(224, 242, 254, 0.32)');
+      visGrad.addColorStop(1, 'rgba(125, 211, 252, 0.24)');
+    } else {
+      // Ice Blue Iridium Shield
+      visGrad.addColorStop(0, 'rgba(165, 243, 252, 0.60)');
+      visGrad.addColorStop(0.50, 'rgba(14, 165, 233, 0.52)');
+      visGrad.addColorStop(1, 'rgba(3, 105, 161, 0.60)');
+    }
+
+    ctx.beginPath();
+    ctx.moveTo(cx - halfW * 0.96, browY + outH * 0.003);
+    ctx.quadraticCurveTo(cx, browY - outH * 0.006, cx + halfW * 0.96, browY + outH * 0.003);
+    ctx.lineTo(cx + halfW * 0.93, visorSideBotY - outH * 0.005);
+    // Right cheek lobe -> center nose-bridge arch -> left cheek lobe
+    ctx.bezierCurveTo(
+      cx + halfW * 0.62, visorSideBotY + outH * 0.005,
+      cx + halfW * 0.24, visorNoseArchY,
+      cx, visorNoseArchY
+    );
+    ctx.bezierCurveTo(
+      cx - halfW * 0.24, visorNoseArchY,
+      cx - halfW * 0.62, visorSideBotY + outH * 0.005,
+      cx - halfW * 0.93, visorSideBotY - outH * 0.005
+    );
+    ctx.closePath();
+
+    ctx.fillStyle = visGrad;
+    ctx.fill();
+
+    // Crisp polycarbonate lower glass rim highlight + subtle dark top seam
+    ctx.lineWidth = Math.max(1.0, outW * 0.0028);
+    ctx.strokeStyle = style.includes('gold')
+      ? 'rgba(254, 249, 195, 0.78)'
+      : (style.includes('smoke') ? 'rgba(148, 163, 184, 0.62)' : 'rgba(224, 242, 254, 0.80)');
+    ctx.stroke();
+
+    // Matte black temple mounting hardware / J-clips
+    ctx.fillStyle = '#090d16';
+    const clipW = halfW * 0.13;
+    const clipH = outH * 0.016;
+    ctx.fillRect(cx - halfW * 0.99, browY + outH * 0.008, clipW, clipH);
+    ctx.fillRect(cx + halfW * 0.86, browY + outH * 0.008, clipW, clipH);
+
+    // Studio diagonal specular reflection sheen across curved visor glass
+    ctx.save();
+    ctx.clip();
+    const sheenGrad = ctx.createLinearGradient(cx - halfW * 0.65, browY, cx - halfW * 0.05, visorSideBotY);
+    sheenGrad.addColorStop(0, 'rgba(255, 255, 255, 0)');
+    sheenGrad.addColorStop(0.42, 'rgba(255, 255, 255, 0.52)');
+    sheenGrad.addColorStop(0.62, 'rgba(255, 255, 255, 0.18)');
+    sheenGrad.addColorStop(1, 'rgba(255, 255, 255, 0)');
+    ctx.fillStyle = sheenGrad;
+    ctx.beginPath();
+    ctx.moveTo(cx - halfW * 0.68, browY - outH * 0.01);
+    ctx.lineTo(cx - halfW * 0.22, browY - outH * 0.01);
+    ctx.lineTo(cx - halfW * 0.44, visorSideBotY + outH * 0.01);
+    ctx.lineTo(cx - halfW * 0.88, visorSideBotY + outH * 0.01);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  }
+
+  ctx.restore();
+}
+
+/**
+ * Composites the real studio-painted 75/25 composite hockey stick (`assets/gear/stick_75_25.png`,
+ * HSL-tinted to the exact SKU colorway) held naturally behind the skater's painted 4-roll glove down to the ice!
+ */
+function paintEquippedStickOverlay(ctx, outW, outH, cfg, showFullGearOnSkater = false, tintedBitmap = null) {
+  const shouldShowStick = showFullGearOnSkater || cfg.stickId !== 'starter-stick' || cfg.previewSlot === 'stick';
+  if (!shouldShowStick) return;
+
+  const stickCanvas = getTintedGearCanvas({ ...cfg.stickItem, category: 'Stick' });
+  if (!stickCanvas) return;
+
+  // Ground contact shadow under stick blade toe/heel on the ice
+  ctx.save();
+  ctx.translate(outW * 0.25, outH * 0.955);
+  ctx.scale(1, 0.16);
+  const bladeShadow = ctx.createRadialGradient(0, 0, outW * 0.01, 0, 0, outW * 0.13);
+  bladeShadow.addColorStop(0, 'rgba(2, 6, 23, 0.62)');
+  bladeShadow.addColorStop(1, 'rgba(2, 6, 23, 0)');
+  ctx.fillStyle = bladeShadow;
+  ctx.beginPath();
+  ctx.arc(0, 0, outW * 0.13, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+
+  // Position stick angled upright through the viewer-left glove with taped blade resting on the ice beside skates
+  ctx.save();
+  ctx.translate(outW * 0.155, outH * 0.655);
+  ctx.rotate(0.57);
+  const drawW = outW * 1.08;
+  const drawH = drawW * (stickCanvas.height / stickCanvas.width);
+  ctx.drawImage(stickCanvas, -drawW * 0.49, -drawH * 0.46, drawW, drawH);
+  ctx.restore();
+
+  // Re-composite the viewer-left RGBA painted 4-roll glove in front of the shaft so the skater grips it naturally!
+  if (tintedBitmap) {
+    const bw = tintedBitmap.width || 374;
+    const bh = tintedBitmap.height || 900;
+    const sx = 0;
+    const sy = Math.round(bh * 0.445);
+    const sw = Math.round(bw * 0.245);
+    const sh = Math.round(bh * 0.165);
+    ctx.drawImage(
+      tintedBitmap,
+      sx, sy, sw, sh,
+      0, outH * 0.445, outW * 0.245, outH * 0.165
+    );
+  }
+}
+
+function paintSkaterOntoCanvas(canvasEl, tintedBitmap, cfg, showFullGearOnSkater = false) {
   if (!canvasEl || !tintedBitmap) return;
   const srcW = tintedBitmap.width || 374;
   const srcH = tintedBitmap.height || 900;
@@ -701,30 +1027,41 @@ function paintSkaterOntoCanvas(canvasEl, tintedBitmap, cfg) {
   ctx.imageSmoothingEnabled = true;
   if ('imageSmoothingQuality' in ctx) ctx.imageSmoothingQuality = 'high';
 
-  // Subtle grounded arena shadow beneath painted skate blades
+  // Grounded arena shadow beneath painted skate blades
   ctx.save();
   ctx.translate(outW * 0.5, outH * 0.968);
   ctx.scale(1, 0.14);
-  const grad = ctx.createRadialGradient(0, 0, outW * 0.04, 0, 0, outW * 0.36);
-  grad.addColorStop(0, 'rgba(2, 6, 23, 0.65)');
-  grad.addColorStop(0.65, 'rgba(15, 23, 42, 0.28)');
+  const grad = ctx.createRadialGradient(0, 0, outW * 0.04, 0, 0, outW * 0.38);
+  grad.addColorStop(0, 'rgba(2, 6, 23, 0.68)');
+  grad.addColorStop(0.65, 'rgba(15, 23, 42, 0.30)');
   grad.addColorStop(1, 'rgba(2, 6, 23, 0)');
   ctx.fillStyle = grad;
   ctx.beginPath();
-  ctx.arc(0, 0, outW * 0.36, 0, Math.PI * 2);
+  ctx.arc(0, 0, outW * 0.38, 0, Math.PI * 2);
   ctx.fill();
   ctx.restore();
 
+  // Draw painted character (with HSL-tinted Hair, Jersey, Gloves & Skates)
   ctx.drawImage(tintedBitmap, 0, 0, outW, outH);
+
+  // Draw equipped / tried-on Helmet / Iridium Visor / Chrome Cage on Skater's Head
+  paintEquippedHeadgearOverlay(ctx, outW, outH, cfg);
+
+  // Draw equipped / tried-on Painted 75/25 Stick held cleanly in Skater's Painted 4-Roll Glove
+  paintEquippedStickOverlay(ctx, outW, outH, cfg, showFullGearOnSkater, tintedBitmap);
 
   canvasEl.setAttribute('data-natural-width', String(srcW));
   canvasEl.setAttribute('data-natural-height', String(srcH));
   canvasEl.setAttribute('data-cache-key', cfg.cacheKey);
   canvasEl.setAttribute('data-avatar-base-id', cfg.avatarBaseId);
+  canvasEl.setAttribute('data-equipped-visor', cfg.visorId);
+  canvasEl.setAttribute('data-equipped-gloves', cfg.glovesId);
+  canvasEl.setAttribute('data-equipped-stick', cfg.stickId);
+  canvasEl.setAttribute('data-equipped-skates', cfg.skatesId);
 }
 
 /**
- * Renders the sleek, non-overlapping 4-slot 75/25 SVG Gear Loadout Dock
+ * Renders the sleek, non-overlapping 4-slot Painted 75/25 Gear Loadout Dock
  * (`Helmet/Visor`, `Stick`, `Gloves`, `Skates`) alongside the painted skater!
  */
 function buildLoadoutDockHtml(cfg, layout = 'vertical') {
@@ -737,22 +1074,23 @@ function buildLoadoutDockHtml(cfg, layout = 'vertical') {
 
   const isHorizontal = layout === 'horizontal';
   const wrapCls = isHorizontal
-    ? 'grid grid-cols-4 gap-1.5 w-full pt-1'
-    : 'flex flex-col justify-center gap-1.5 shrink-0 z-20';
+    ? 'grid grid-cols-4 gap-1 w-full pt-0.5'
+    : 'flex flex-col justify-center gap-1 shrink-0 z-20';
 
   const cardsHtml = slots.map((sl) => {
     const isTrying = cfg.previewSlot === sl.key;
     const isProUpgrade = !String(sl.id || '').startsWith('starter-');
     const borderCls = isTrying
-      ? 'border-cyan-300 bg-cyan-950/85 ring-2 ring-cyan-300/80 shadow-[0_0_12px_rgba(34,211,238,0.45)]'
+      ? 'border-cyan-300 bg-cyan-950/90 ring-2 ring-cyan-300/80 shadow-[0_0_12px_rgba(34,211,238,0.45)]'
       : (isProUpgrade
-          ? 'border-emerald-400/75 bg-slate-950/90 shadow-md'
-          : 'border-slate-700/85 bg-slate-950/85');
+          ? 'border-emerald-400/75 bg-[#0b1324]/95 shadow-md'
+          : 'border-slate-700/85 bg-[#0b1324]/90');
     const tagCol = isTrying ? 'text-cyan-200' : (isProUpgrade ? 'text-emerald-300' : 'text-slate-400');
 
-    // Render 75/25 shaded gear SVG scaled cleanly inside the compact dock tile
-    const rawSvg = renderGearItemArtSvg(sl.item, { compact: true })
-      .replace(/w-20 h-14/g, isHorizontal ? 'w-full h-9' : 'w-12 h-8 sm:w-14 sm:h-9');
+    const paintedThumb = renderGearItemArtSvg(sl.item, {
+      dockTile: true,
+      horizontalDock: isHorizontal
+    });
 
     return `
       <div
@@ -762,7 +1100,7 @@ function buildLoadoutDockHtml(cfg, layout = 'vertical') {
         title="${escHtml(sl.item.name || sl.label)}"
         class="rounded-xl border ${borderCls} px-1 py-0.5 flex flex-col items-center justify-center transition-all"
       >
-        ${rawSvg}
+        ${paintedThumb}
         <span class="text-[8px] font-black tracking-wider leading-tight mt-0.5 ${tagCol}">${isTrying ? 'TRYING' : sl.label}</span>
       </div>
     `;
@@ -776,93 +1114,72 @@ function buildLoadoutDockHtml(cfg, layout = 'vertical') {
 }
 
 /**
- * 180° Back View — Richly Textured Pro-Stitched Rear Hockey Sweater & 4-Slot Gear Showcase.
- * ZERO geometric robot heads, faces, hands, or stick-figure limbs!
+ * 180° Back View — Authentic Painted 75/25 Pro Sweater Back (`GUGGER` + `#38` stitched tackle-twill
+ * nameplate & single bold center-back number, ZERO `#38` spammed 4x!) + 4-Slot Painted Gear Strip.
  */
 export function buildRearSweaterShowcaseHtml(rawState = {}, options = {}) {
   const uid = nextSkaterUid();
   const cfg = normalizeSkaterState(rawState, options.previewItem || null);
-  const jerseyLight = adjustHex(cfg.jerseyColor, 42, '#38bdf8');
-  const jerseyDark = adjustHex(cfg.jerseyColor, -52, '#090d16');
+  const jerseyLight = adjustHex(cfg.jerseyColor, 38, '#38bdf8');
+  const jerseyDark = adjustHex(cfg.jerseyColor, -48, '#090d16');
   const jNumStr = cfg.jerseyNumber !== '' ? cfg.jerseyNumber : '9';
   const numLum = luminance(cfg.jerseyColor);
   const numTextFill = numLum > 0.68 ? '#0f172a' : '#ffffff';
   const numOutline = numLum > 0.68 ? '#ffffff' : cfg.jerseyAccent;
   const nameLen = cfg.backNameplate.length;
-  const nameFontSize = nameLen >= 12 ? 11.2 : (nameLen >= 9 ? 13.0 : 14.8);
+  const nameFontSize = nameLen >= 12 ? 11.4 : (nameLen >= 9 ? 13.2 : 15.0);
   const compact = Boolean(options.compactRear);
+
+  // Pull real painted 75/25 jersey image (HSL-tinted to player's exact jersey color!) for sleeves & cloth folds
+  const paintedJerseyUrl = getTintedGearDataUrl({
+    id: `rear-jersey-${cfg.jerseyColor}`,
+    category: 'Jersey',
+    color: cfg.jerseyColor,
+    accentColor: cfg.jerseyAccent
+  }) || 'assets/gear/jersey_75_25.png';
 
   return `
     <div class="w-full h-full flex flex-col items-center justify-between gap-1 select-none" data-rear-sweater-showcase="true">
-      <div class="flex-1 min-h-0 w-full flex items-center justify-center">
+      <div class="flex-1 min-h-0 w-full flex items-center justify-center relative">
         <svg
-          viewBox="0 0 260 220"
+          viewBox="0 0 260 210"
           role="img"
           aria-label="${escHtml(cfg.backNameplate)} #${escHtml(jNumStr)} Pro Stitched Rear Hockey Sweater"
-          class="w-full h-full max-h-full object-contain drop-shadow-[0_10px_18px_rgba(2,6,23,0.75)]"
+          class="w-full h-full max-h-full object-contain drop-shadow-[0_12px_20px_rgba(2,6,23,0.82)]"
           data-rear-sweater-svg="true"
         >
           <defs>
-            <linearGradient id="${uid}_jback" x1="15%" y1="0%" x2="85%" y2="100%">
+            <linearGradient id="${uid}_backpanel" x1="0%" y1="0%" x2="0%" y2="100%">
               <stop offset="0%" stop-color="${jerseyLight}"/>
               <stop offset="48%" stop-color="${cfg.jerseyColor}"/>
               <stop offset="100%" stop-color="${jerseyDark}"/>
             </linearGradient>
-            <pattern id="${uid}_mesh" width="6" height="6" patternUnits="userSpaceOnUse">
-              <circle cx="1.5" cy="1.5" r="0.65" fill="rgba(2,6,23,0.18)"/>
-              <circle cx="4.5" cy="4.5" r="0.65" fill="rgba(255,255,255,0.08)"/>
-            </pattern>
           </defs>
 
-          <!-- Pro Hockey Rear Sweater Garment Silhouette (Garment Only — Zero Robot Head/Limbs!) -->
+          <!-- Real Studio-Painted 75/25 Pro Hockey Sweater Base (Sleeves, Shoulders, Cloth Folds & Hem Stripes) -->
+          <image href="${escHtml(paintedJerseyUrl)}" x="8" y="2" width="244" height="204" preserveAspectRatio="xMidYMid meet" />
+
+          <!-- Seamless Rear Torso Panel Covering Front Laces & Crest -> Clean Pro Back Cloth + Yoke -->
           <g data-skater-layer="jersey-back">
             <path
-              d="M 82 22 Q 130 12 178 22 L 236 68 L 216 132 L 188 118 L 190 194 Q 130 202 70 194 L 72 118 L 44 132 L 24 68 Z"
-              fill="url(#${uid}_jback)"
-              stroke="rgba(255,255,255,0.38)"
-              stroke-width="1.8"
-              stroke-linejoin="round"
+              d="M 96 18 Q 130 27 164 18 L 176 48 L 175 150 L 85 150 L 84 48 Z"
+              fill="url(#${uid}_backpanel)"
             />
-            <!-- Breathable Pro Air-Knit Mesh Texture -->
-            <path
-              d="M 82 22 Q 130 12 178 22 L 236 68 L 216 132 L 188 118 L 190 194 Q 130 202 70 194 L 72 118 L 44 132 L 24 68 Z"
-              fill="url(#${uid}_mesh)"
-            />
+            <!-- Stitched Rear Collar Ribbing & Shoulder Yoke Seam -->
+            <path d="M 99 16 Q 130 27 161 16 L 156 27 Q 130 35 104 27 Z" fill="#090d16" stroke="#f8fafc" stroke-width="1.2"/>
+            <path d="M 78 46 Q 130 41 182 46" fill="none" stroke="${cfg.jerseyAccent}" stroke-width="1.8"/>
+            <path d="M 80 49 Q 130 44 180 49" fill="none" stroke="rgba(255,255,255,0.38)" stroke-width="0.9" stroke-dasharray="3 2"/>
 
-            <!-- Stitched Rear Shoulder Yoke & Double-Needle Seam -->
-            <path d="M 82 22 Q 130 12 178 22 L 214 51 Q 130 46 46 51 Z" fill="${jerseyDark}" opacity="0.62" stroke="${cfg.jerseyAccent}" stroke-width="1.5"/>
-            <path d="M 52 55 Q 130 50 208 55" fill="none" stroke="rgba(255,255,255,0.42)" stroke-width="1" stroke-dasharray="3.5 2.5"/>
-
-            <!-- Rear Collar Ribbing & Chromed League Shield Tag -->
-            <path d="M 102 18 Q 130 28 158 18 L 152 29 Q 130 37 108 29 Z" fill="#090d16" stroke="#f8fafc" stroke-width="1.3"/>
-            <polygon points="130,23 135,25.5 133.5,31.5 130,33.5 126.5,31.5 125,25.5" fill="${cfg.jerseyAccent}" stroke="#0f172a" stroke-width="0.8"/>
-
-            <!-- Dimensional Fabric Drape Creases -->
-            <path d="M 84 96 Q 90 138 82 182 M 176 96 Q 170 138 178 182" fill="none" stroke="rgba(2,6,23,0.34)" stroke-width="2.6" stroke-linecap="round"/>
-
-            <!-- Double Sleeve Stripes & Sleeve TV Numbers -->
-            <polygon points="32,96 68,87 70,96 36,105" fill="${cfg.jerseyAccent}"/>
-            <polygon points="37,108 70,99 71,106 40,115" fill="#f8fafc"/>
-            <polygon points="228,96 192,87 190,96 224,105" fill="${cfg.jerseyAccent}"/>
-            <polygon points="223,108 190,99 189,106 220,115" fill="#f8fafc"/>
-            <text x="53" y="81" fill="${numTextFill}" stroke="${numOutline}" stroke-width="0.8" font-family="Impact, Inter, sans-serif" font-size="14" font-weight="900" text-anchor="middle">${escHtml(jNumStr)}</text>
-            <text x="207" y="81" fill="${numTextFill}" stroke="${numOutline}" stroke-width="0.8" font-family="Impact, Inter, sans-serif" font-size="14" font-weight="900" text-anchor="middle">${escHtml(jNumStr)}</text>
-
-            <!-- Double Waist Hem Stripes -->
-            <rect x="71" y="168" width="118" height="8" fill="${cfg.jerseyAccent}"/>
-            <rect x="71" y="179" width="118" height="5.5" fill="#f8fafc" opacity="0.95"/>
-
-            <!-- Authentic Stitched Rear Fight-Strap Loop & Snap Tab -->
-            <rect x="121" y="174" width="18" height="25" rx="3.5" fill="#f8fafc" stroke="#64748b" stroke-width="1.2"/>
-            <rect x="123.5" y="176.5" width="13" height="8" rx="1.5" fill="none" stroke="#94a3b8" stroke-width="0.8" stroke-dasharray="2 1.5"/>
-            <circle cx="130" cy="192" r="2.8" fill="#94a3b8" stroke="#0f172a" stroke-width="0.9"/>
+            <!-- Authentic Stitched Rear Fight-Strap Loop -->
+            <rect x="122" y="170" width="16" height="21" rx="3" fill="#f8fafc" stroke="#64748b" stroke-width="1.1"/>
+            <circle cx="130" cy="185" r="2.4" fill="#94a3b8" stroke="#0f172a" stroke-width="0.8"/>
 
             <!-- STITCHED TACKLE-TWILL UPPER-BACK NAMEBAR -->
-            <rect x="74" y="54" width="112" height="24" rx="4.5" fill="rgba(9,13,22,0.86)" stroke="${cfg.jerseyAccent}" stroke-width="1.5"/>
-            <rect x="77" y="57" width="106" height="18" rx="3" fill="none" stroke="rgba(255,255,255,0.38)" stroke-width="0.9" stroke-dasharray="3.5 2"/>
+            <rect x="76" y="53" width="108" height="23" rx="4" fill="rgba(9,13,22,0.88)" stroke="${cfg.jerseyAccent}" stroke-width="1.4"/>
+            <rect x="79" y="56" width="102" height="17" rx="2.5" fill="none" stroke="rgba(255,255,255,0.35)" stroke-width="0.8" stroke-dasharray="3 2"/>
             <text
               x="130"
-              y="71"
+              y="69.5"
               data-skater-layer="back-nameplate"
               fill="#ffffff"
               font-family="Inter, Impact, Segoe UI, sans-serif"
@@ -872,17 +1189,17 @@ export function buildRearSweaterShowcaseHtml(rawState = {}, options = {}) {
               text-anchor="middle"
             >${escHtml(cfg.backNameplate)}</text>
 
-            <!-- GIANT DOUBLE-LAYER TACKLE-TWILL BACK JERSEY NUMBER -->
+            <!-- SINGLE GIANT DOUBLE-LAYER STITCHED TACKLE-TWILL BACK JERSEY NUMBER -->
             <text
               x="130"
-              y="148"
+              y="141"
               data-skater-layer="back-number"
               fill="${numTextFill}"
               stroke="${numOutline}"
               stroke-width="4.2"
               paint-order="stroke fill"
               font-family="Impact, Inter, Arial Black, sans-serif"
-              font-size="68"
+              font-size="64"
               font-weight="900"
               letter-spacing="1.5"
               text-anchor="middle"
@@ -899,24 +1216,16 @@ export function buildRearSweaterShowcaseHtml(rawState = {}, options = {}) {
   `;
 }
 
-/**
- * Synchronously returns a cached `<canvas>` if the base painted PNG is already decoded,
- * or resolves via `ensurePaintedCanvasReady(cfg)` once decoded.
- */
 export function getCachedTintedBitmap(cfg) {
   const hit = _tintedBitmapCache.get(cfg.cacheKey);
   if (hit) return hit;
   const rawImg = _rawImageCache.get(cfg.avatarBaseId);
   if (rawImg && rawImg.complete && rawImg.naturalWidth > 0) {
-    return buildTintedBitmapFromImage(rawImg, cfg.avatarMeta, cfg.hairColor, cfg.jerseyColor);
+    return buildTintedBitmapFromImage(rawImg, cfg);
   }
   return null;
 }
 
-/**
- * Compatibility string builder (`buildCustomizableSkaterSvg`):
- * Returns HTML string for static string callers (`0` geometric robot shapes!).
- */
 export function buildCustomizableSkaterSvg(rawState = {}, options = {}) {
   const cfg = normalizeSkaterState(rawState, options.previewItem || null);
   const angle = options.angleDeg !== undefined ? Number(options.angleDeg) : 0;
@@ -925,8 +1234,7 @@ export function buildCustomizableSkaterSvg(rawState = {}, options = {}) {
   if (view.face === 'back') {
     return `
       <div
-        data-skater-renderer="v154-painted-75-25"
-        data-view-angle="${Math.round(view.normAngle)}"
+        data-skater-renderer="v155-painted-75-25"
         data-view-face="back"
         data-avatar-base-id="${escHtml(cfg.avatarBaseId)}"
         data-hair-color="${escHtml(cfg.hairColor)}"
@@ -959,8 +1267,7 @@ export function buildCustomizableSkaterSvg(rawState = {}, options = {}) {
 
   return `
     <div
-      data-skater-renderer="v154-painted-75-25"
-      data-view-angle="${Math.round(view.normAngle)}"
+      data-skater-renderer="v155-painted-75-25"
       data-view-face="front"
       data-avatar-base-id="${escHtml(cfg.avatarBaseId)}"
       data-hair-color="${escHtml(cfg.hairColor)}"
@@ -978,9 +1285,6 @@ export function buildCustomizableSkaterSvg(rawState = {}, options = {}) {
   `;
 }
 
-/**
- * Compact circular headshot badge backed by the REAL painted 75/25 portrait (zero geometric SVG faces!).
- */
 export function buildMiniSkaterHeadSvg(rawState = {}, sizePx = 36) {
   const cfg = normalizeSkaterState(rawState);
   const s = Math.max(24, Number(sizePx) || 36);
@@ -1013,23 +1317,28 @@ export function buildMiniSkaterHeadSvg(rawState = {}, sizePx = 36) {
 }
 
 /**
- * Mounts the Real Painted 75/25 High-DPI `<canvas>` Skater (`0° Front`) + Smooth Flip
- * to Pro-Stitched Rear Sweater & Gear Showcase (`180° Back`) into `container`.
+ * Mounts the Real Painted 75/25 High-DPI `<canvas>` Skater (`0° Front`) + Continuous
+ * Horizontal Finger-Drag 3D `rotateY` Spin to Rear Pro Sweater (`180° Back`) into `container`.
+ * ZERO `Spin 360°` buttons and ZERO raw degree labels (`Front (333°)` / `Front 0°`)!
  */
 export function renderCustomizableSkater(container, skaterState = {}, options = {}) {
   const el = typeof container === 'string'
     ? (typeof document !== 'undefined' ? document.getElementById(container) : null)
     : container;
 
-  const initialAngle = Number.isFinite(Number(options.angleDeg)) ? Number(options.angleDeg) : 0;
+  const rawAngle = Number.isFinite(Number(options.angleDeg)) ? Number(options.angleDeg) : 0;
+  // Snap resting angle cleanly to 0° or 180° so a skater is NEVER stuck at a crooked 333° tilt!
+  const initialFace = classifySpinView(rawAngle).face;
+  const initialAngle = initialFace === 'back' ? 180 : 0;
+
   if (!el) {
     return buildCustomizableSkaterSvg(skaterState, { ...options, angleDeg: initialAngle });
   }
 
   const cfg = normalizeSkaterState(skaterState, options.previewItem || null);
-  const showSpinButton = Boolean(options.showSpinButton);
   const showLoadoutDock = Boolean(options.showLoadoutDock);
-  const spinBtnIdAttr = options.spinButtonId ? `id="${escHtml(options.spinButtonId)}"` : '';
+  const showDragHint = options.showDragHint !== false && !options.hideDragHint && el.clientWidth !== 0 ? true : (options.showDragHint !== false && !options.compactRear);
+  const showFullGearOnSkater = Boolean(showLoadoutDock || options.showGearOnSkater);
   const initialView = classifySpinView(initialAngle);
   const renderToken = nextSkaterUid();
   el._synapzSkaterRenderToken = renderToken;
@@ -1037,7 +1346,7 @@ export function renderCustomizableSkater(container, skaterState = {}, options = 
   const syncGlobalTelemetry = (viewObj) => {
     if (typeof window !== 'undefined') {
       window._lastRenderedYoungPlayerAvatar = {
-        style: 'v154-painted-75-25-hsl-canvas',
+        style: 'v155-painted-75-25-hsl-canvas',
         profileId: cfg.profileId,
         avatarBaseId: cfg.avatarBaseId,
         avatarLabel: cfg.avatarLabel,
@@ -1059,15 +1368,13 @@ export function renderCustomizableSkater(container, skaterState = {}, options = 
     }
   };
 
-  const angleLabelFor = (v) => (v.face === 'back' ? 'Back 180°' : 'Front 0°');
-
   el.innerHTML = `
     <div
       class="synapz-skater-360-stage relative w-full h-full flex flex-col items-center justify-between select-none"
       data-skater-stage="true"
       data-skater-renderer="v154-painted-75-25"
+      data-skater-version="v15.5"
       data-avatar-base-id="${escHtml(cfg.avatarBaseId)}"
-      data-view-angle="${Math.round(initialView.normAngle)}"
       data-view-face="${initialView.face}"
       data-hair-style="${escHtml(cfg.hairStyle)}"
       data-hair-color="${escHtml(cfg.hairColor)}"
@@ -1078,18 +1385,16 @@ export function renderCustomizableSkater(container, skaterState = {}, options = 
       data-gloves-id="${escHtml(cfg.glovesId)}"
       data-visor-id="${escHtml(cfg.visorId)}"
       data-skates-id="${escHtml(cfg.skatesId)}"
-      style="touch-action: pan-y; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: space-between;"
+      style="touch-action: pan-y; width: 100%; height: 100%; min-height: 0; max-height: 100%; overflow: hidden; display: flex; flex-direction: column; align-items: center; justify-content: space-between; -webkit-perspective: 960px; perspective: 960px;"
     >
       <div
         class="synapz-skater-360-figure flex-1 min-h-0 w-full flex items-center justify-center gap-2 cursor-grab active:cursor-grabbing"
         data-skater-figure-wrap="true"
-        style="flex: 1 1 0%; min-height: 0; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; -webkit-transition: -webkit-transform 180ms ease, opacity 180ms ease; transition: transform 180ms ease, opacity 180ms ease;"
+        style="flex: 1 1 0%; min-height: 0; max-height: 100%; overflow: hidden; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; gap: 8px; -webkit-transform-style: preserve-3d; transform-style: preserve-3d; will-change: transform;"
       ></div>
-      ${showSpinButton ? `
-        <div class="shrink-0 pt-1 flex items-center justify-center gap-1.5 z-30">
-          <button ${spinBtnIdAttr} type="button" data-skater-spin-btn="true" class="px-3 py-1 rounded-full bg-slate-950/92 hover:bg-slate-900 border border-cyan-400/75 text-cyan-200 text-[10px] sm:text-[11px] font-black shadow-lg backdrop-blur-md cursor-pointer">
-            🔄 Flip Front / Back (${angleLabelFor(initialView)})
-          </button>
+      ${showDragHint ? `
+        <div data-skater-drag-caption="true" class="shrink-0 pt-0.5 text-[10px] font-bold text-slate-400/90 tracking-wide text-center select-none pointer-events-none">
+          ↔ Drag skater to spin
         </div>
       ` : ''}
     </div>
@@ -1097,20 +1402,18 @@ export function renderCustomizableSkater(container, skaterState = {}, options = 
 
   const stageRoot = el.querySelector('[data-skater-stage]');
   const figureWrap = el.querySelector('[data-skater-figure-wrap]');
-  const spinBtn = el.querySelector('[data-skater-spin-btn]');
 
   let currentAngle = initialAngle;
-  let dragStartX = null;
-  let didDrag = false;
+  let renderedFace = null;
 
   const mountViewFace = (viewObj) => {
     if (!figureWrap || !stageRoot) return;
-    stageRoot.setAttribute('data-view-angle', String(Math.round(viewObj.normAngle)));
     stageRoot.setAttribute('data-view-face', viewObj.face);
     syncGlobalTelemetry(viewObj);
+    if (renderedFace === viewObj.face) return;
+    renderedFace = viewObj.face;
 
     if (viewObj.face === 'back') {
-      // Back 180° already includes the horizontal 4-slot gear loadout strip below the rear sweater!
       figureWrap.innerHTML = buildRearSweaterShowcaseHtml(skaterState, {
         ...options,
         compactRear: Boolean(options.compactRear)
@@ -1118,11 +1421,10 @@ export function renderCustomizableSkater(container, skaterState = {}, options = 
       return;
     }
 
-    // Front 0°: Crisp High-DPI `<canvas>` Painted 75/25 Skater + Optional Sleek Loadout Dock Alongside!
     figureWrap.innerHTML = `
-      <div style="height: 100%; width: 100%; flex: 1 1 0%; min-width: 0; display: flex; align-items: center; justify-content: center;">
+      <div style="height: 100%; max-height: 100%; min-height: 0; overflow: hidden; width: 100%; flex: 1 1 0%; min-width: 0; display: flex; align-items: center; justify-content: center;">
         <canvas
-          class="synapz-painted-skater-canvas block select-none"
+          class="synapz-painted-skater-canvas block select-none pointer-events-none"
           data-painted-avatar-canvas="true"
           data-avatar-src="${escHtml(cfg.avatarSrc)}"
           style="height: 100%; width: auto; max-width: 100%; max-height: 100%; object-fit: contain; margin: 0 auto;"
@@ -1134,84 +1436,128 @@ export function renderCustomizableSkater(container, skaterState = {}, options = 
     const canvasEl = figureWrap.querySelector('canvas[data-painted-avatar-canvas]');
     const syncCachedBitmap = getCachedTintedBitmap(cfg);
     if (syncCachedBitmap) {
-      paintSkaterOntoCanvas(canvasEl, syncCachedBitmap, cfg);
+      paintSkaterOntoCanvas(canvasEl, syncCachedBitmap, cfg, showFullGearOnSkater);
     } else {
       loadRawAvatarImage(cfg.avatarMeta).then((loadedImg) => {
         if (!loadedImg || el._synapzSkaterRenderToken !== renderToken) return;
         const liveCanvas = figureWrap.querySelector('canvas[data-painted-avatar-canvas]');
         if (!liveCanvas) return;
-        const tinted = buildTintedBitmapFromImage(loadedImg, cfg.avatarMeta, cfg.hairColor, cfg.jerseyColor);
-        paintSkaterOntoCanvas(liveCanvas, tinted, cfg);
+        const tinted = buildTintedBitmapFromImage(loadedImg, cfg);
+        paintSkaterOntoCanvas(liveCanvas, tinted, cfg, showFullGearOnSkater);
+      });
+    }
+
+    // Re-attach optional dock-slot click handler in Locker Room
+    if (typeof options.onDockSlotClick === 'function') {
+      figureWrap.querySelectorAll('[data-skater-loadout-dock] [data-dock-slot]').forEach((slotEl) => {
+        slotEl.classList.add('cursor-pointer', 'hover:border-cyan-300');
+        slotEl.addEventListener('click', (ev) => {
+          ev.stopPropagation();
+          options.onDockSlotClick(slotEl.getAttribute('data-dock-slot') || 'visor');
+        });
       });
     }
   };
 
   mountViewFace(initialView);
 
-  const applyAngle = (nextAngle, animateFlip = false) => {
-    currentAngle = ((Number(nextAngle) || 0) % 360 + 360) % 360;
-    const nextView = classifySpinView(currentAngle);
-    el._skaterWasDragged = true;
-    setTimeout(() => { el._skaterWasDragged = false; }, 80);
+  const applyVisualScrubRotation = (deg, withTransition = false) => {
+    if (!figureWrap) return;
+    const norm = ((deg % 360) + 360) % 360;
+    const view = classifySpinView(norm);
+    mountViewFace(view);
 
-    if (figureWrap && animateFlip) {
-      figureWrap.style.webkitTransform = 'scaleX(0.08)';
-      figureWrap.style.transform = 'scaleX(0.08)';
-      setTimeout(() => {
-        if (el._synapzSkaterRenderToken !== renderToken || !figureWrap) return;
-        mountViewFace(nextView);
-        figureWrap.style.webkitTransform = 'scaleX(1)';
-        figureWrap.style.transform = 'scaleX(1)';
-      }, 95);
-    } else {
-      mountViewFace(nextView);
-    }
+    // Pure Y-axis perspective rotation (ZERO Z-tilt or diagonal lean!)
+    let relDeg = view.face === 'back' ? (norm - 180) : (norm > 180 ? norm - 360 : norm);
+    relDeg = Math.max(-82, Math.min(82, relDeg));
+    const shade = (1 - Math.abs(Math.sin((relDeg * Math.PI) / 180)) * 0.28).toFixed(3);
 
-    if (spinBtn) {
-      spinBtn.textContent = `🔄 Flip Front / Back (${angleLabelFor(nextView)})`;
-    }
+    figureWrap.style.webkitTransition = withTransition ? '-webkit-transform 210ms cubic-bezier(0.22, 1, 0.36, 1), filter 210ms ease' : 'none';
+    figureWrap.style.transition = withTransition ? 'transform 210ms cubic-bezier(0.22, 1, 0.36, 1), filter 210ms ease' : 'none';
+    const tf = Math.abs(relDeg) < 0.4 ? 'rotateY(0deg)' : `rotateY(${relDeg.toFixed(1)}deg)`;
+    figureWrap.style.webkitTransform = tf;
+    figureWrap.style.transform = tf;
+    figureWrap.style.filter = Math.abs(relDeg) < 1 ? 'none' : `brightness(${shade})`;
+  };
+
+  const settleToCanonicalAngle = (targetAngle, animate = true) => {
+    const cleanTarget = classifySpinView(targetAngle).face === 'back' ? 180 : 0;
+    currentAngle = cleanTarget;
+    applyVisualScrubRotation(cleanTarget, animate);
     if (typeof options.onAngleChange === 'function') {
-      options.onAngleChange(currentAngle);
+      options.onAngleChange(cleanTarget);
     }
   };
 
-  if (spinBtn) {
-    spinBtn.addEventListener('click', (ev) => {
-      ev.preventDefault();
-      ev.stopPropagation();
-      const v = classifySpinView(currentAngle);
-      applyAngle(v.face === 'back' ? 0 : 180, true);
-    });
-  }
+  el._setSkaterSpinAngle = (deg) => settleToCanonicalAngle(deg, true);
 
   if (figureWrap) {
+    let activePointerId = null;
+    let dragStartX = null;
+    let dragStartAngle = initialAngle;
+    let maxAbsDx = 0;
+
     figureWrap.addEventListener('pointerdown', (ev) => {
       if (ev.target && ev.target.closest && ev.target.closest('[data-skater-loadout-dock]')) return;
+      activePointerId = ev.pointerId;
       dragStartX = ev.clientX;
-      didDrag = false;
+      dragStartAngle = currentAngle;
+      maxAbsDx = 0;
+      try {
+        if (typeof figureWrap.setPointerCapture === 'function') {
+          figureWrap.setPointerCapture(ev.pointerId);
+        }
+      } catch (_) {}
     });
+
     figureWrap.addEventListener('pointermove', (ev) => {
+      if (dragStartX === null || (activePointerId !== null && ev.pointerId !== activePointerId)) return;
+      const dx = ev.clientX - dragStartX;
+      maxAbsDx = Math.max(maxAbsDx, Math.abs(dx));
+      if (maxAbsDx > 5) {
+        el._skaterWasDragged = true;
+        const rect = stageRoot.getBoundingClientRect();
+        const spanPx = Math.max(110, (rect.width || 220) * 0.62);
+        const liveDeg = dragStartAngle + (dx / spanPx) * 180;
+        applyVisualScrubRotation(liveDeg, false);
+      }
+    });
+
+    const finishPointerDrag = (ev) => {
       if (dragStartX === null) return;
       const dx = ev.clientX - dragStartX;
-      if (Math.abs(dx) > 26 && !didDrag) {
-        didDrag = true;
-        const curFace = classifySpinView(currentAngle).face;
-        applyAngle(curFace === 'back' ? 0 : 180, true);
-      }
-    });
-    const endDrag = (ev) => {
-      if (dragStartX !== null && didDrag) {
+      const rect = stageRoot.getBoundingClientRect();
+      const spanPx = Math.max(110, (rect.width || 220) * 0.62);
+      const releaseDeg = dragStartAngle + (dx / spanPx) * 180;
+
+      if (maxAbsDx > 24) {
+        // Responsive swipe OR continuous drag across 90°/270° settles smoothly to Front (0°) or Back (180°)
+        const crossed = classifySpinView(releaseDeg).face;
+        const startFace = classifySpinView(dragStartAngle).face;
+        const target = crossed !== startFace ? (crossed === 'back' ? 180 : 0) : (Math.abs(dx) > 32 ? (startFace === 'back' ? 0 : 180) : dragStartAngle);
+        settleToCanonicalAngle(target, true);
+        ev.stopPropagation();
+      } else if (maxAbsDx > 5) {
+        settleToCanonicalAngle(dragStartAngle, true);
         ev.stopPropagation();
       }
+
+      try {
+        if (activePointerId !== null && typeof figureWrap.releasePointerCapture === 'function') {
+          figureWrap.releasePointerCapture(activePointerId);
+        }
+      } catch (_) {}
       dragStartX = null;
+      activePointerId = null;
+      setTimeout(() => { el._skaterWasDragged = false; }, 110);
     };
-    figureWrap.addEventListener('pointerup', endDrag);
-    figureWrap.addEventListener('pointercancel', endDrag);
+
+    figureWrap.addEventListener('pointerup', finishPointerDrag);
+    figureWrap.addEventListener('pointercancel', finishPointerDrag);
     figureWrap.addEventListener('click', (ev) => {
-      if (didDrag || el._skaterWasDragged) {
+      if (el._skaterWasDragged) {
         ev.preventDefault();
         ev.stopPropagation();
-        didDrag = false;
       }
     }, true);
   }
