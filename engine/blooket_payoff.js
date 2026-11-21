@@ -3,8 +3,16 @@
  * (`engine/blooket_payoff.js`)
  */
 
-import { CANONICAL_9_MODES, CANONICAL_5_POSITIONS, validateDrillSchema, validateDrillCatalog } from './validate_drills.js';
+import { CANONICAL_9_MODES, ACTIVE_PROVEN_7_MODES, CANONICAL_5_POSITIONS, validateDrillSchema, validateDrillCatalog } from './validate_drills.js';
 import { MODE_LABELS } from './modes_9pack.js';
+
+if (typeof window !== 'undefined' && typeof window.SYNAPZ_ENABLE_BONUS_MINIGAMES !== 'boolean') {
+  window.SYNAPZ_ENABLE_BONUS_MINIGAMES = false;
+}
+
+export function isBonusMinigamesEnabled() {
+  return typeof window !== 'undefined' && window.SYNAPZ_ENABLE_BONUS_MINIGAMES === true;
+}
 
 export function ensureProfileConceptMastery(prof) {
   if (!prof || typeof prof !== 'object') return {};
@@ -144,7 +152,7 @@ export class BlooketPayoffController {
     this.mountEl = mountEl;
     this.onRewardCredited = onRewardCredited;
     this.isOpen = false;
-    this.phase = 'breakaway'; // 'breakaway' | 'bags' | 'done'
+    this.phase = 'done'; // 'breakaway' | 'bags' | 'done'
     this.timeLeft = 6.0;
     this.goalieOffset = 0;
     this.breakawayScored = false;
@@ -153,12 +161,20 @@ export class BlooketPayoffController {
     this.pickedBagIdx = null;
     this._rafId = null;
     this._lastTs = 0;
+    this._domBuilt = false;
 
-    this._buildDom();
+    if (this.mountEl) {
+      this.mountEl.innerHTML = '';
+      this.mountEl.classList.add('hidden');
+    }
+    if (isBonusMinigamesEnabled()) {
+      this._buildDom();
+    }
   }
 
   _buildDom() {
-    if (!this.mountEl) return;
+    if (!this.mountEl || !isBonusMinigamesEnabled()) return;
+    this._domBuilt = true;
     this.mountEl.innerHTML = `
       <div id="v14BlooketModalCard" class="fixed inset-0 z-[120] bg-slate-950/90 backdrop-blur-md flex items-center justify-center p-3">
         <div class="w-full max-w-xl rounded-2xl bg-[#090D16] border-2 border-amber-400 shadow-2xl overflow-hidden space-y-3 p-4">
@@ -243,7 +259,22 @@ export class BlooketPayoffController {
   }
 
   launch({ reason = '🔥 3 Gold Reads in a Row!', baseBucks = 40 } = {}) {
-    if (!this.mountEl) return;
+    if (!isBonusMinigamesEnabled()) {
+      this.isOpen = false;
+      this.phase = 'done';
+      if (this._rafId) {
+        cancelAnimationFrame(this._rafId);
+        this._rafId = null;
+      }
+      if (this.mountEl) {
+        this.mountEl.innerHTML = '';
+        this.mountEl.classList.add('hidden');
+      }
+      this._domBuilt = false;
+      return false;
+    }
+    if (!this.mountEl) return false;
+    if (!this._domBuilt) this._buildDom();
     this.isOpen = true;
     this.phase = 'breakaway';
     this.timeLeft = 6.0;
@@ -505,8 +536,8 @@ export class DrillCatalogDrawerController {
               <option value="ST">Special Teams (ST)</option>
             </select>
             <select id="v14FilterMode" class="px-2 py-1.5 rounded-lg bg-slate-950 border border-slate-700 text-slate-200 font-bold">
-              <option value="ALL">All 9 Modes</option>
-              ${CANONICAL_9_MODES.map(m => `<option value="${m}">${MODE_LABELS[m] || m}</option>`).join('')}
+              <option value="ALL">All Modes</option>
+              ${ACTIVE_PROVEN_7_MODES.map(m => `<option value="${m}">${MODE_LABELS[m] || m}</option>`).join('')}
             </select>
             <select id="v14FilterPos" class="px-2 py-1.5 rounded-lg bg-slate-950 border border-slate-700 text-slate-200 font-bold">
               <option value="ALL">All Pos</option>

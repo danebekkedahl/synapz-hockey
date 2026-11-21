@@ -51,6 +51,12 @@ export function escapeHtmlText(s) {
 
 export function buildPlainKidQuestionHtml(drill) {
   if (!drill) return '';
+  const customPrompt = String(drill.modeConfig?.questionPrompt || '').trim();
+  if (customPrompt) {
+    const cleanPrompt = escapeHtmlText(customPrompt);
+    const prefix = drill.mode === 'fog_of_war' ? '👀 YOUR JOB:' : '❓ QUESTION:';
+    return `<span class="text-amber-300">${prefix}</span> <span class="text-white">${cleanPrompt}</span>`;
+  }
   const qRaw = String(drill.briefing || drill.title || '').trim();
   const q = escapeHtmlText(qRaw);
   switch (drill.mode) {
@@ -61,60 +67,57 @@ export function buildPlainKidQuestionHtml(drill) {
     case 'spot_the_breakdown':
       return `<span class="text-amber-300">🕵️ DETECTIVE:</span> <span class="text-white">Watch the goal, then </span><span class="text-amber-200">tap the defender who blew coverage!</span> <span class="text-slate-200">(${q})</span>`;
     case 'fog_of_war':
-      return `<span class="text-amber-300">👀 YOUR JOB:</span> <span class="text-white">Tap </span><span class="text-amber-200">SCAN</span><span class="text-white"> to check your blind spot, then tap the open pass target! (${q})</span>`;
+      return `<span class="text-amber-300">👀 YOUR JOB:</span> <span class="text-white">Tap </span><span class="text-amber-200">SCAN</span><span class="text-white"> to check your blind spot, then tap the best target (A, B, or C)! (${q})</span>`;
     case 'two_touch':
       return `<span class="text-amber-300">⚡ TWO-TOUCH:</span> <span class="text-white">Tap </span><span class="text-amber-200">Pass #1</span><span class="text-white"> then </span><span class="text-amber-200">Pass #2</span><span class="text-white"> BEFORE the puck hits your stick! (${q})</span>`;
-    case 'gap_surfing':
-      return `<span class="text-amber-300">🛡️ GAP CONTROL:</span> <span class="text-white">Slide backward to hold the green gap, then tap </span><span class="text-amber-200">POKE</span><span class="text-white"> at the blue line! (${q})</span>`;
-    case 'lane_sweeper':
-      return `<span class="text-amber-300">🏒 ACTIVE STICK:</span> <span class="text-white">Drag to angle your stick and block cross-ice seam passes! (${q})</span>`;
     case 'draw_the_route':
       return `<span class="text-amber-300">✏️ DRAW ROUTE:</span> <span class="text-white">Drag your skating route into </span><span class="text-emerald-300">THIS SPACE</span><span class="text-white"> on time and onside! (${q})</span>`;
     case 'change_or_stay':
       return `<span class="text-amber-300">⏱️ BENCH IQ:</span> <span class="text-white">Legs are tired — tap </span><span class="text-amber-200">CHANGE NOW</span><span class="text-white"> or </span><span class="text-emerald-300">STAY &amp; DEFEND</span><span class="text-white">! (${q})</span>`;
     default:
-      return `<span class="text-amber-300">❓ QUESTION:</span> <span class="text-white">${q}</span>`;
+      return `<span class="text-amber-300">❓ QUESTION:</span> <span class="text-white">${q} — </span><span class="text-amber-200">Tap A, B, or C!</span>`;
   }
 }
 
 /**
  * Failsafe Watchdog: guarantees valid coordinates, trajectories, and interactive targets
- * across all 9 modes even if an optional/custom drill field is missing.
+ * across all proven modes (and automatically upgrades any legacy gap_surfing / lane_sweeper
+ * drill to crisp A/B/C read_and_react).
  */
 export function ensureSafeDrillForEngine(drillRaw) {
   const base = normalizeDrillLineup(drillRaw || {});
-  const mode = base.mode || 'read_and_react';
+  const rawMode = base.mode || 'read_and_react';
+  const mode = (rawMode === 'gap_surfing' || rawMode === 'lane_sweeper') ? 'read_and_react' : rawMode;
   const rawMc = (base.modeConfig && typeof base.modeConfig === 'object') ? { ...base.modeConfig } : {};
   const homeFieldSkaters = (base.skaters || []).filter(s => s.team === 'home' && s.id !== 'G');
-  const awayFieldSkaters = (base.skaters || []).filter(s => s.team === 'away' && s.id !== 'G');
   const youSk = homeFieldSkaters.find(s => s.id === base.youRole) || homeFieldSkaters[0] || { id: 'C', start: [240, 250], motion: [[240, 250], [260, 240]] };
   const mates = homeFieldSkaters.filter(s => s.id !== youSk.id);
 
   if (mode === 'read_and_react' || mode === 'fog_of_war') {
     if (!Array.isArray(rawMc.options) || rawMc.options.length === 0) {
-      const m1 = mates[0]?.motion?.[mates[0].motion.length - 1] || [320, 150];
-      const m2 = mates[1]?.motion?.[mates[1].motion.length - 1] || [320, 350];
-      const m3 = mates[2]?.motion?.[mates[2].motion.length - 1] || [220, 250];
+      const m1 = mates[0]?.motion?.[mates[0].motion.length - 1] || [355, 135];
+      const m2 = mates[1]?.motion?.[mates[1].motion.length - 1] || [355, 365];
+      const m3 = mates[2]?.motion?.[mates[2].motion.length - 1] || [185, 250];
       rawMc.options = [
-        { id: 'A', label: 'Hit open weak-side support', target: [...m1], isGold: true, pathType: 'pass' },
-        { id: 'B', label: 'Force into sealed strong wall', target: [...m2], isGold: false, pathType: 'pass' },
-        { id: 'C', label: 'Hold into heavy pressure', target: [...m3], isGold: false, pathType: 'skate' }
+        { id: 'A', label: 'Inside-out containment angle', target: [...m1], isGold: true, pathType: 'skate' },
+        { id: 'B', label: 'Over-aggressive lunge wide', target: [...m2], isGold: false, pathType: 'skate' },
+        { id: 'C', label: 'Back deep onto own goalie', target: [...m3], isGold: false, pathType: 'skate' }
       ];
     } else if (!rawMc.options.some(o => o && o.isGold)) {
       rawMc.options[0] = { ...rawMc.options[0], isGold: true };
     }
     if (mode === 'read_and_react' && (!rawMc.freezeTime || rawMc.freezeTime <= 0)) {
-      rawMc.freezeTime = 1.5;
+      rawMc.freezeTime = 2.4;
     }
     if (mode === 'fog_of_war') {
-      if (!rawMc.passArrivalTime || rawMc.passArrivalTime <= 0) rawMc.passArrivalTime = 1.8;
+      if (!rawMc.passArrivalTime || rawMc.passArrivalTime <= 0) rawMc.passArrivalTime = 2.4;
       if (!rawMc.fogRegion) rawMc.fogRegion = { x: 240, y: 30, w: 210, h: 180, label: 'BLIND-SIDE FOG — TAP SCAN!' };
     }
   } else if (mode === 'ghost_player') {
     if (!Array.isArray(rawMc.targetZoneKeyframes) || rawMc.targetZoneKeyframes.length === 0) {
       rawMc.targetZoneKeyframes = [
-        { t: 0, x: youSk.start[0] + 25, y: 250, rx: 52, ry: 42, label: 'THIS SPACE' },
-        { t: 1, x: youSk.start[0] + 45, y: 235, rx: 52, ry: 42, label: 'THIS SPACE' }
+        { t: 0, x: Math.min(920, youSk.start[0] + 135), y: 250, rx: 52, ry: 42, label: 'THIS SPACE' },
+        { t: 1, x: Math.min(920, youSk.start[0] + 150), y: 235, rx: 52, ry: 42, label: 'THIS SPACE' }
       ];
     }
   } else if (mode === 'two_touch') {
@@ -138,21 +141,9 @@ export function ensureSafeDrillForEngine(drillRaw) {
       }));
     }
     if (!rawMc.culpritId) rawMc.culpritId = rawMc.suspects[0]?.id || youSk.id;
-  } else if (mode === 'gap_surfing') {
-    if (!rawMc.attackerId) rawMc.attackerId = awayFieldSkaters[0]?.id || 'F1';
-    if (!rawMc.idealGapDist) rawMc.idealGapDist = 82;
-    if (!rawMc.gapTolerance) rawMc.gapTolerance = 48;
-    if (!Array.isArray(rawMc.pokeWindowX)) rawMc.pokeWindowX = [300, 460];
-  } else if (mode === 'lane_sweeper') {
-    if (!Array.isArray(rawMc.pivotOrigin)) rawMc.pivotOrigin = [...youSk.start];
-    if (!Array.isArray(rawMc.passes) || rawMc.passes.length === 0) {
-      rawMc.passes = [
-        { tStart: 0.3, tEnd: 1.4, from: [260, 110], to: [260, 380], isThreat: true, label: 'CROSS-SEAM THREAT!' }
-      ];
-    }
   } else if (mode === 'draw_the_route') {
     if (!rawMc.thisSpace) {
-      const mEnd = youSk.motion?.[youSk.motion.length - 1] || [youSk.start[0] + 90, youSk.start[1] - 40];
+      const mEnd = youSk.motion?.[youSk.motion.length - 1] || [youSk.start[0] + 125, youSk.start[1] - 40];
       rawMc.thisSpace = { x: mEnd[0], y: mEnd[1], r: 54, label: 'THIS SPACE' };
     }
     if (!Array.isArray(rawMc.idealRoute) || rawMc.idealRoute.length < 2) {
@@ -210,6 +201,8 @@ export class Subconscious9ModeEngine {
     this.coverageFramesIn = 0;
     this.coverageFramesTotal = 0;
     this.coveragePct = 100;
+    this.pendingStreakBonus = null;
+    this.chosenOption = null;
     this.fogScannedInTime = false;
     this.fogLiftRemainingSec = 0;
     this.fogReadyForChoice = false;
@@ -287,15 +280,18 @@ export class Subconscious9ModeEngine {
           </div>
         </div>
 
-        <!-- Mode-Native >= 44px Interactive Controls Dock (Stages 2 & 3) -->
-        <div id="v14ModeControlsDock" class="px-3 py-2 bg-slate-950 border-t border-slate-800/90 min-h-[58px] flex flex-col justify-center"></div>
+        <!-- Mode-Native >= 44px Interactive Controls Dock (Stages 2 & 3; pr-28 clears bottom-right 🚩 Flag pill) -->
+        <div id="v14ModeControlsDock" class="pl-3 pr-28 py-2 bg-slate-950 border-t border-slate-800/90 min-h-[58px] flex flex-col justify-center"></div>
 
-        <!-- Universal Stage 5 Tactical Debrief Scrubber Dock -->
-        <div id="v14DebriefDock" class="hidden px-3.5 py-2.5 bg-slate-950 border-t-2 border-teal-400/80 space-y-2">
+        <!-- Universal Stage 5 Tactical Debrief Scrubber Dock (pr-28 clears bottom-right 🚩 Flag pill) -->
+        <div id="v14DebriefDock" class="hidden pl-3.5 pr-28 py-2.5 bg-slate-950 border-t-2 border-teal-400/80 space-y-2">
           <div class="flex flex-wrap items-center justify-between gap-2">
-            <div class="flex items-center gap-2">
+            <div class="flex flex-wrap items-center gap-2">
               <span id="v14DebriefOutcomeBanner" class="px-3 py-1 rounded-xl bg-emerald-500/20 border border-emerald-400 text-emerald-300 text-xs sm:text-sm font-black">
                 🏆 CLEAN PLAY! +25 IQ
+              </span>
+              <span id="v14DebriefStreakBonusPill" class="hidden px-3 py-1 rounded-xl bg-amber-400/20 border border-amber-400 text-amber-200 text-xs font-black">
+                🔥 3-In-A-Row Gold Streak! +50 Bonus Puck Bucks
               </span>
               <span id="v14DebriefSubDetail" class="text-[11px] font-bold text-slate-300"></span>
             </div>
@@ -542,7 +538,9 @@ export class Subconscious9ModeEngine {
     this.pointerDragging = false;
     this.coverageFramesIn = 0;
     this.coverageFramesTotal = 0;
-    this.coveragePct = 100;
+    this.coveragePct = drill.mode === 'ghost_player' ? 0 : 100;
+    this.pendingStreakBonus = null;
+    this.chosenOption = null;
     this.fogScannedInTime = false;
     this.fogLiftRemainingSec = 0;
     this.fogReadyForChoice = false;
@@ -879,26 +877,35 @@ export class Subconscious9ModeEngine {
     if (this.drill.mode === 'fog_of_war') {
       const won = Boolean(opt.isGold && this.fogScannedInTime);
       const detail = won
-        ? 'Pre-scanned blind side + hit the open outlet!'
+        ? (opt.outcomeSummary || `Shoulder-checked blind spot + nailed Option ${opt.id}: ${opt.label}!`)
         : (!this.fogScannedInTime && opt.isGold
-            ? 'Good outlet, but ALWAYS Shoulder-Check BEFORE puck arrives!'
-            : `Turnover into pressure (${opt.label}).`);
+            ? 'Good read, but ALWAYS Shoulder-Check (SCAN) your blind spot first!'
+            : (opt.outcomeSummary || `Turnover into pressure (${opt.label}).`));
       this._beginOutcomeMovie(won, detail, opt);
       return;
     }
 
-    this._beginOutcomeMovie(Boolean(opt.isGold), opt.isGold ? `Nailed Option ${opt.id}: ${opt.label}!` : `Turnover on Option ${opt.id} (${opt.label}).`, opt);
+    const detail = opt.outcomeSummary || (opt.isGold ? `Nailed Option ${opt.id}: ${opt.label}!` : `Turnover on Option ${opt.id} (${opt.label}).`);
+    this._beginOutcomeMovie(Boolean(opt.isGold), detail, opt);
   }
 
   triggerShoulderCheckScan() {
     if (!this.drill || this.drill.mode !== 'fog_of_war') return;
     const mc = this.drill.modeConfig || {};
-    if (!this.fogReadyForChoice) {
-      this.fogScannedInTime = true;
-    }
-    this.fogLiftRemainingSec = mc.scanRevealSec || 1.4;
+    this.fogScannedInTime = true;
+    this.fogLiftRemainingSec = Math.max(2.5, mc.scanRevealSec || 1.8);
     this._renderModeControlsDock();
     this._renderCurrentFrame();
+  }
+
+  applyStreakBonusFeedback({ streak = 3, bonusBucks = 50, text = '' } = {}) {
+    const cleanText = text || `🔥 3-In-A-Row Gold Streak! +${bonusBucks} Bonus Puck Bucks`;
+    this.pendingStreakBonus = { streak, bonusBucks, text: cleanText };
+    const streakPill = this.mountEl?.querySelector('#v14DebriefStreakBonusPill');
+    if (streakPill) {
+      streakPill.textContent = cleanText;
+      streakPill.classList.remove('hidden');
+    }
   }
 
   pickTwoTouchNode(nodeId) {
@@ -1014,9 +1021,12 @@ export class Subconscious9ModeEngine {
     this.chosenOption = chosenOption;
     this.earnedIq = isGold ? 25 : 5;
     this.earnedBucks = isGold ? 25 : 5;
+    this.pendingStreakBonus = null;
     this.stage = 'outcome_movie';
     this.outcomeElapsed = 0;
-    this.outcomeDuration = (typeof window !== 'undefined' && window.__SYNAPZ_FAST_OUTCOME__) ? 0.12 : 1.1;
+    const cfgOutcomeDur = Number(this.drill?.modeConfig?.outcomeDurationSec || 0);
+    const liveDur = cfgOutcomeDur > 0 ? cfgOutcomeDur : 1.4;
+    this.outcomeDuration = (typeof window !== 'undefined' && window.__SYNAPZ_FAST_OUTCOME__) ? 0.12 : liveDur;
 
     this.mountEl?.querySelector('#v14ModeControlsDock')?.classList.add('hidden');
     this._clearOnIceInteractiveOverlay();
@@ -1048,6 +1058,7 @@ export class Subconscious9ModeEngine {
 
     const dock = this.mountEl?.querySelector('#v14DebriefDock');
     const banner = this.mountEl?.querySelector('#v14DebriefOutcomeBanner');
+    const streakPill = this.mountEl?.querySelector('#v14DebriefStreakBonusPill');
     const detailEl = this.mountEl?.querySelector('#v14DebriefSubDetail');
     const ruleEl = this.mountEl?.querySelector('#v14DebriefCoachRule');
     const scrubber = this.mountEl?.querySelector('#v14TimelineScrubber');
@@ -1060,6 +1071,14 @@ export class Subconscious9ModeEngine {
       banner.className = this.isGoldResult
         ? 'px-3 py-1 rounded-xl bg-emerald-500/20 border border-emerald-400 text-emerald-300 text-xs sm:text-sm font-black'
         : 'px-3 py-1 rounded-xl bg-rose-500/20 border border-rose-400 text-rose-300 text-xs sm:text-sm font-black';
+    }
+    if (streakPill) {
+      if (this.isGoldResult && this.pendingStreakBonus && this.pendingStreakBonus.text) {
+        streakPill.textContent = this.pendingStreakBonus.text;
+        streakPill.classList.remove('hidden');
+      } else {
+        streakPill.classList.add('hidden');
+      }
     }
     if (detailEl) detailEl.textContent = this.resultDetail;
     if (ruleEl) ruleEl.textContent = this.drill?.coachRule || '';
@@ -1403,15 +1422,24 @@ export class Subconscious9ModeEngine {
         dock.innerHTML = `
           <div class="flex items-center justify-center">
             <button id="btnV14ShoulderScan" type="button" class="min-h-[46px] w-full sm:w-auto py-2.5 px-6 rounded-xl bg-gradient-to-r from-amber-400 to-sky-400 hover:from-amber-300 hover:to-sky-300 text-slate-950 font-black text-xs sm:text-sm shadow-lg cursor-pointer">
-              👀 SHOULDER CHECK (SCAN) ${this.fogScannedInTime ? '✅ SCANNED!' : '— Tap Before Puck Arrives!'}
+              👀 SHOULDER CHECK (SCAN) ${this.fogScannedInTime ? '✅ SCANNED!' : '— Tap to Reveal Blind Spot!'}
             </button>
           </div>
         `;
         dock.querySelector('#btnV14ShoulderScan')?.addEventListener('click', () => this.triggerShoulderCheckScan());
       } else {
         dock.innerHTML = `
-          <div class="space-y-1">
-            <div class="text-[11px] font-black uppercase tracking-wider text-amber-300">🎯 Tap the open pass target (A, B, or C):</div>
+          <div class="space-y-1.5">
+            <div class="flex flex-wrap items-center justify-between gap-2">
+              <div class="text-[11px] font-black uppercase tracking-wider text-amber-300">
+                ${this.fogScannedInTime ? '✅ Blind Spot Scanned! Tap the best target (A, B, or C):' : '👀 Step 1: Tap SHOULDER CHECK (SCAN) • Step 2: Tap A, B, or C:'}
+              </div>
+              ${!this.fogScannedInTime ? `
+                <button id="btnV14ShoulderScan" type="button" class="min-h-[38px] py-1.5 px-4 rounded-xl bg-gradient-to-r from-amber-400 to-sky-400 hover:from-amber-300 hover:to-sky-300 text-slate-950 font-black text-xs shadow animate-pulse cursor-pointer">
+                  👀 SHOULDER CHECK (SCAN)
+                </button>
+              ` : ''}
+            </div>
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
               ${(mc.options || []).map(opt => `
                 <button type="button" data-v14-choice="${opt.id}" class="min-h-[46px] py-2 px-3 rounded-xl bg-slate-900 hover:bg-slate-800 border-2 border-sky-400/75 text-left flex items-center gap-2.5 transition cursor-pointer">
@@ -1422,6 +1450,7 @@ export class Subconscious9ModeEngine {
             </div>
           </div>
         `;
+        dock.querySelector('#btnV14ShoulderScan')?.addEventListener('click', () => this.triggerShoulderCheckScan());
         dock.querySelectorAll('[data-v14-choice]').forEach(btn => {
           btn.addEventListener('click', () => this.submitAbcOption(btn.getAttribute('data-v14-choice')));
         });
@@ -1662,20 +1691,29 @@ export class Subconscious9ModeEngine {
     // Stage 4 Live Outcome Movie
     if (this.stage === 'outcome_movie') {
       const t = Math.min(1, this.outcomeElapsed / Math.max(0.1, this.outcomeDuration));
+      const optSkaterMap = (this.chosenOption && this.chosenOption.skaterOutcomes && typeof this.chosenOption.skaterOutcomes === 'object')
+        ? this.chosenOption.skaterOutcomes
+        : null;
       const skaters = (this.drill.skaters || []).map((sk) => {
-        let pts = this.isGoldResult ? (sk.outcomeGold || sk.motion) : (sk.outcomeMiss || sk.motion);
+        let pts = (optSkaterMap && Array.isArray(optSkaterMap[sk.id]))
+          ? optSkaterMap[sk.id]
+          : (this.isGoldResult ? (sk.outcomeGold || sk.motion) : (sk.outcomeMiss || sk.motion));
         if (sk.id === this.drill.youRole && mode === 'draw_the_route' && this.drawnRoutePoints.length > 1) {
           pts = this.drawnRoutePoints;
         }
         return { ...sk, pos: samplePolylineAt(pts || [sk.start], t) };
       });
-      const puckPts = this.isGoldResult ? (this.drill.puck?.goldPath || [[500, 250]]) : (this.drill.puck?.missPath || [[500, 250]]);
+      const puckPts = (this.chosenOption && Array.isArray(this.chosenOption.puckOutcome) && this.chosenOption.puckOutcome.length > 0)
+        ? this.chosenOption.puckOutcome
+        : (this.isGoldResult ? (this.drill.puck?.goldPath || [[500, 250]]) : (this.drill.puck?.missPath || [[500, 250]]));
       const puckPos = samplePolylineAt(puckPts, t);
 
       this.rink.renderScene({
         camera: this.drill.camera,
         nowMs,
         youRole: this.drill.youRole,
+        showLeftHouse: Boolean(mc.showLeftHouse),
+        showRightHouse: Boolean(mc.showRightHouse),
         paths: [{
           type: this.isGoldResult ? 'pass' : 'skate',
           points: puckPts,
@@ -1790,7 +1828,7 @@ export class Subconscious9ModeEngine {
       const z = this._sampleGhostTargetZone(normT);
       scene.thisSpaceHalo = { ...z, color: this.coveragePct >= 55 ? 'emerald' : 'gold' };
     } else if (mode === 'fog_of_war') {
-      const lifted = this.fogLiftRemainingSec > 0 || this.fogReadyForChoice;
+      const lifted = Boolean(this.fogScannedInTime || this.fogLiftRemainingSec > 0);
       scene.fogOverlay = { ...(mc.fogRegion || { x: 250, y: 20, w: 200, h: 200 }), lifted };
       if (!lifted) scene.hiddenSkaterIds = mc.hiddenDefenderIds || [];
       if (this.fogReadyForChoice && this.stage === 'challenge') {

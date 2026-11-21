@@ -10,10 +10,11 @@
  */
 
 import { RINK_SPEC, WhiteIceRink1000x500, normalizeDrillLineup } from './rink_1000x500.js';
-import { CANONICAL_9_MODES, validateDrillSchema, validateDrillCatalog } from './validate_drills.js';
+import { CANONICAL_9_MODES, ACTIVE_PROVEN_7_MODES, validateDrillSchema, validateDrillCatalog } from './validate_drills.js';
 import { ChalkTalkReelController } from './chalk_reel.js';
 import { Subconscious9ModeEngine, MODE_LABELS, buildPlainKidQuestionHtml, ensureSafeDrillForEngine } from './modes_9pack.js';
 import {
+  isBonusMinigamesEnabled,
   ensureProfileConceptMastery,
   getConceptStatus,
   markConceptReelWatched,
@@ -23,6 +24,10 @@ import {
   BlooketPayoffController,
   DrillCatalogDrawerController
 } from './blooket_payoff.js';
+
+if (typeof window !== 'undefined' && typeof window.SYNAPZ_ENABLE_BONUS_MINIGAMES !== 'boolean') {
+  window.SYNAPZ_ENABLE_BONUS_MINIGAMES = false;
+}
 import { TeamShowdownController } from './team_showdown.js';
 import SynapzSkaterRenderer360, { renderCustomizableSkater, buildCustomizableSkaterSvg, buildMiniSkaterHeadSvg } from './skater_renderer_360.js';
 import SynapzGearArt7525, { renderGearCategoryIconSvg, renderGearItemArtSvg, getOwnedLockerBagItems } from './gear_art_75_25.js';
@@ -997,6 +1002,14 @@ class SynapzV14TeachingCoordinator {
     // Guest Funnel (`⚡ Try 3 Plays Free`) Compatibility
     const guestSess = typeof window !== 'undefined' ? window.__synapzGuestDemoSession : null;
     if (guestSess && guestSess.active && typeof window.handleGuestDemoPlayResolved === 'function') {
+      if (isGold && this.liveStreak >= 3 && this.liveStreak % 3 === 0 && !isBonusMinigamesEnabled()) {
+        guestSess.earnedBucks = Number(guestSess.earnedBucks || 0) + 50;
+        this.modeEngine?.applyStreakBonusFeedback?.({
+          streak: this.liveStreak,
+          bonusBucks: 50,
+          text: '🔥 3-In-A-Row Gold Streak! +50 Bonus Puck Bucks'
+        });
+      }
       window.handleGuestDemoPlayResolved({ isCorrect: isGold, mult: isGold ? 1.0 : 0 });
       return;
     }
@@ -1005,6 +1018,7 @@ class SynapzV14TeachingCoordinator {
     if (prof && drill?.conceptId) {
       recordConceptRepResult(prof, drill.conceptId, isGold);
     }
+    const quietStreakBonusBucks = (isGold && this.liveStreak >= 3 && this.liveStreak % 3 === 0 && !isBonusMinigamesEnabled()) ? 50 : 0;
     if (typeof window !== 'undefined' && window.state) {
       if (typeof window.recordAdaptivePlayOutcome === 'function' && prof && window.SCENARIOS?.[0]) {
         try {
@@ -1012,7 +1026,7 @@ class SynapzV14TeachingCoordinator {
         } catch (_) {}
       }
       window.state.iqScore = Math.max(0, Number(window.state.iqScore || prof?.iqScore || 0) + earnedIq);
-      window.state.puckBucks = Math.max(0, Number(window.state.puckBucks || prof?.puckBucks || 0) + earnedBucks);
+      window.state.puckBucks = Math.max(0, Number(window.state.puckBucks || prof?.puckBucks || 0) + earnedBucks + quietStreakBonusBucks);
       if (drill?.id) {
         if (!window.state.completedIds || typeof window.state.completedIds !== 'object') {
           window.state.completedIds = {};
@@ -1039,16 +1053,24 @@ class SynapzV14TeachingCoordinator {
 
     this.refreshSkillRingsUI();
 
-    // Blooket Subconscious Payoff Trigger: 3 Gold reads in a row!
-    if (isGold && this.liveStreak > 0 && this.liveStreak % 3 === 0) {
-      setTimeout(() => {
-        if (!this.blooket.isOpen) {
-          this.blooket.launch({
-            reason: `🔥 ${this.liveStreak}x Gold Streak Bonus!`,
-            baseBucks: 40
-          });
-        }
-      }, 280);
+    // v15.7 Streak Reward: Quiet synchronous +50 Puck Bucks inside post-play bar by default (0 broken bonus popups!)
+    if (isGold && this.liveStreak >= 3 && this.liveStreak % 3 === 0) {
+      if (isBonusMinigamesEnabled()) {
+        setTimeout(() => {
+          if (!this.blooket.isOpen) {
+            this.blooket.launch({
+              reason: `🔥 ${this.liveStreak}x Gold Streak Bonus!`,
+              baseBucks: 40
+            });
+          }
+        }, 280);
+      } else {
+        this.modeEngine?.applyStreakBonusFeedback?.({
+          streak: this.liveStreak,
+          bonusBucks: 50,
+          text: '🔥 3-In-A-Row Gold Streak! +50 Bonus Puck Bucks'
+        });
+      }
     }
   }
 
@@ -1074,6 +1096,7 @@ class SynapzV14TeachingCoordinator {
   }
 
   advanceNextRep() {
+    this._silenceAllSpeechNow('advance_next_rep');
     const guestSess = typeof window !== 'undefined' ? window.__synapzGuestDemoSession : null;
     if (guestSess && guestSess.active && typeof window.advanceGuestDemoPlay === 'function') {
       window.advanceGuestDemoPlay();
@@ -1150,7 +1173,7 @@ class SynapzV14TeachingCoordinator {
       if (typeof window.updateHeaderStats === 'function') window.updateHeaderStats();
     }
 
-    if (this.drillQueue.length >= 5 && !this.blooket.isOpen) {
+    if (isBonusMinigamesEnabled() && this.drillQueue.length >= 5 && !this.blooket.isOpen) {
       this.blooket.launch({
         reason: '🏆 5-Rep Shift Complete Bonus!',
         baseBucks: 50
@@ -1195,6 +1218,7 @@ if (typeof window !== 'undefined') {
     normalizeDrillLineup,
     ensureSafeDrillForEngine,
     CANONICAL_9_MODES,
+    ACTIVE_PROVEN_7_MODES,
     MODE_LABELS,
     validateDrillSchema,
     validateDrillCatalog,

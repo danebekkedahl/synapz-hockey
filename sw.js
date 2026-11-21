@@ -1,4 +1,4 @@
-const CACHE_NAME = 'synapz-hockey-v15.6-red-flag-sniping-system';
+const CACHE_NAME = 'synapz-hockey-v15.7-redflag-batch1-resolution';
 const PRECACHE_ASSETS = [
   './',
   './index.html',

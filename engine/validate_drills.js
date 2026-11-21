@@ -20,6 +20,23 @@ export const CANONICAL_9_MODES = [
   'change_or_stay'
 ];
 
+export const ACTIVE_PROVEN_7_MODES = [
+  'read_and_react',
+  'ghost_player',
+  'fog_of_war',
+  'two_touch',
+  'spot_the_breakdown',
+  'draw_the_route',
+  'change_or_stay'
+];
+
+export const RETIRED_MODES = [
+  'gap_surfing',
+  'lane_sweeper'
+];
+
+export const ANTI_GIVEAWAY_MIN_DIST = 110;
+
 export const CANONICAL_5_ZONES = ['DZ', 'NZ', 'OM', 'OZ', 'ST'];
 export const CANONICAL_5_POSITIONS = ['C', 'LW', 'RW', 'LD', 'RD'];
 
@@ -108,7 +125,15 @@ function checkPolylineGoalCageClearance(points, label, errors) {
 
 export function computeFreezeSkaterPositions(drill) {
   const normT = drill.mode === 'spot_the_breakdown' ? 0.35 : 1.0;
+  const youStartsAtZero = drill.mode === 'ghost_player' || drill.mode === 'draw_the_route';
   return (drill.skaters || []).map((sk) => {
+    if (youStartsAtZero && sk.id === drill.youRole && Array.isArray(sk.start)) {
+      return {
+        id: sk.id,
+        team: sk.team,
+        pos: [sk.start[0], sk.start[1]]
+      };
+    }
     const traj = Array.isArray(sk.motion) && sk.motion.length > 0 ? sk.motion : [sk.start];
     return {
       id: sk.id,
@@ -133,8 +158,12 @@ export function validateDrillSchema(drill, opts = {}) {
   if (!CANONICAL_5_ZONES.includes(drill.zone)) {
     errors.push(`Invalid drill.zone "${drill.zone}"`);
   }
-  if (!CANONICAL_9_MODES.includes(drill.mode)) {
-    errors.push(`Invalid drill.mode "${drill.mode}" (must be one of 9 canonical modes)`);
+  if (!ACTIVE_PROVEN_7_MODES.includes(drill.mode)) {
+    if (RETIRED_MODES.includes(drill.mode)) {
+      errors.push(`Drill mode "${drill.mode}" is retired in v15.7 (must convert to read_and_react or fog_of_war)`);
+    } else {
+      errors.push(`Invalid drill.mode "${drill.mode}" (must be one of the 7 proven modes: ${ACTIVE_PROVEN_7_MODES.join(', ')})`);
+    }
   }
   if (!CANONICAL_5_POSITIONS.includes(drill.youRole)) {
     errors.push(`Invalid drill.youRole "${drill.youRole}" (must be C, LW, RW, LD, or RD)`);
@@ -311,17 +340,39 @@ export function validateDrillSchema(drill, opts = {}) {
         if (!Array.isArray(mc.options) || mc.options.length !== 3) {
           errors.push('read_and_react requires exactly 3 A/B/C options');
         } else {
-          const goldCount = mc.options.filter(o => o.isGold).length;
-          if (goldCount < 1) errors.push('read_and_react requires at least 1 isGold option');
+          const goldOpts = mc.options.filter(o => o.isGold);
+          if (goldOpts.length < 1) errors.push('read_and_react requires at least 1 isGold option');
           mc.options.forEach((opt, i) => {
             checkCoordPair(opt.target, `modeConfig.options[${i}].target`, errors);
             if (countWords(opt.label) > 6) {
               errors.push(`modeConfig.options[${i}].label "${opt.label}" exceeds 6 words`);
             }
             if (youFreeze && opt.pathType !== 'shot' && segmentCutsGoalCageBack(youFreeze.pos, opt.target)) {
-              errors.push(`modeConfig.options[${i}] pass cuts impossibly through goal cage`);
+              errors.push(`modeConfig.options[${i}] pass/skate cuts impossibly through goal cage`);
             }
           });
+          // Ensure A / B / C targets are spatially separated (>= 70 rink units apart)
+          for (let i = 0; i < mc.options.length; i++) {
+            for (let j = i + 1; j < mc.options.length; j++) {
+              const ta = mc.options[i]?.target;
+              const tb = mc.options[j]?.target;
+              if (Array.isArray(ta) && Array.isArray(tb)) {
+                const dOpt = Math.hypot(ta[0] - tb[0], ta[1] - tb[1]);
+                if (dOpt < 70) {
+                  errors.push(`A/B/C target overlap: options ${mc.options[i].id} & ${mc.options[j].id} are only ${dOpt.toFixed(1)} units apart (must be >= 70)`);
+                }
+              }
+            }
+          }
+          // Anti-Giveaway Geometric Audit: skating/positioning destinations for YOU ARE must be >= 110 rink units from YOU at freeze
+          for (const gOpt of goldOpts) {
+            if (gOpt.pathType === 'skate' && youFreeze && Array.isArray(gOpt.target)) {
+              const distToGold = Math.hypot(youFreeze.pos[0] - gOpt.target[0], youFreeze.pos[1] - gOpt.target[1]);
+              if (distToGold < ANTI_GIVEAWAY_MIN_DIST) {
+                errors.push(`Anti-Giveaway violation (${drill.conceptId}): YOU (${drill.youRole}) at freeze [${youFreeze.pos.map(n => Math.round(n)).join(',')}] is only ${distToGold.toFixed(1)} units from Gold skating target [${gOpt.target.join(',')}] (must be >= ${ANTI_GIVEAWAY_MIN_DIST})`);
+              }
+            }
+          }
         }
         if (Array.isArray(mc.pressureCones)) {
           mc.pressureCones.forEach((c, i) => {
@@ -335,8 +386,16 @@ export function validateDrillSchema(drill, opts = {}) {
         if (!Array.isArray(mc.targetZoneKeyframes) || mc.targetZoneKeyframes.length < 2) {
           errors.push('ghost_player requires >= 2 targetZoneKeyframes');
         } else {
+          const youSk = (drill.skaters || []).find(s => s.id === drill.youRole);
+          const youStart = youSk?.start || youFreeze?.pos;
           mc.targetZoneKeyframes.forEach((kf, i) => {
             checkCoordPair([kf.x, kf.y], `modeConfig.targetZoneKeyframes[${i}]`, errors);
+            if (Array.isArray(youStart)) {
+              const distKf = Math.hypot(youStart[0] - kf.x, youStart[1] - kf.y);
+              if (distKf < ANTI_GIVEAWAY_MIN_DIST) {
+                errors.push(`Anti-Giveaway violation (${drill.conceptId}): YOU (${drill.youRole}) start [${youStart.join(',')}] is only ${distKf.toFixed(1)} units from targetZoneKeyframes[${i}] [${kf.x},${kf.y}] (must be >= ${ANTI_GIVEAWAY_MIN_DIST})`);
+              }
+            }
           });
         }
         break;
@@ -356,17 +415,39 @@ export function validateDrillSchema(drill, opts = {}) {
           );
         }
         if (!Array.isArray(mc.options) || mc.options.length !== 3) {
-          errors.push('fog_of_war requires 3 outlet options');
+          errors.push('fog_of_war requires 3 A/B/C options');
         } else {
+          const goldOpts = mc.options.filter(o => o.isGold);
+          if (goldOpts.length < 1) errors.push('fog_of_war requires at least 1 isGold option');
           mc.options.forEach((opt, i) => {
             checkCoordPair(opt.target, `modeConfig.options[${i}].target`, errors);
             if (countWords(opt.label) > 6) {
               errors.push(`modeConfig.options[${i}].label "${opt.label}" exceeds 6 words`);
             }
-            if (youFreeze && segmentCutsGoalCageBack(youFreeze.pos, opt.target)) {
-              errors.push(`modeConfig.options[${i}] outlet pass cuts impossibly through goal cage`);
+            if (youFreeze && opt.pathType !== 'shot' && segmentCutsGoalCageBack(youFreeze.pos, opt.target)) {
+              errors.push(`modeConfig.options[${i}] pass/skate cuts impossibly through goal cage`);
             }
           });
+          for (let i = 0; i < mc.options.length; i++) {
+            for (let j = i + 1; j < mc.options.length; j++) {
+              const ta = mc.options[i]?.target;
+              const tb = mc.options[j]?.target;
+              if (Array.isArray(ta) && Array.isArray(tb)) {
+                const dOpt = Math.hypot(ta[0] - tb[0], ta[1] - tb[1]);
+                if (dOpt < 70) {
+                  errors.push(`A/B/C target overlap: options ${mc.options[i].id} & ${mc.options[j].id} are only ${dOpt.toFixed(1)} units apart (must be >= 70)`);
+                }
+              }
+            }
+          }
+          for (const gOpt of goldOpts) {
+            if (gOpt.pathType === 'skate' && youFreeze && Array.isArray(gOpt.target)) {
+              const distToGold = Math.hypot(youFreeze.pos[0] - gOpt.target[0], youFreeze.pos[1] - gOpt.target[1]);
+              if (distToGold < ANTI_GIVEAWAY_MIN_DIST) {
+                errors.push(`Anti-Giveaway violation (${drill.conceptId}): YOU (${drill.youRole}) at freeze [${youFreeze.pos.map(n => Math.round(n)).join(',')}] is only ${distToGold.toFixed(1)} units from Gold skating target [${gOpt.target.join(',')}] (must be >= ${ANTI_GIVEAWAY_MIN_DIST})`);
+              }
+            }
+          }
         }
         break;
       }
@@ -391,41 +472,19 @@ export function validateDrillSchema(drill, opts = {}) {
         }
         break;
       }
-      case 'gap_surfing': {
-        if (!mc.attackerId) errors.push('gap_surfing requires attackerId');
-        if (typeof mc.blueLineX !== 'number' || mc.blueLineX < 0 || mc.blueLineX > 1000) {
-          errors.push('gap_surfing requires valid blueLineX');
-        }
-        if (typeof mc.idealGapDist !== 'number' || mc.idealGapDist <= 0) {
-          errors.push('gap_surfing requires idealGapDist > 0');
-        }
-        break;
-      }
-      case 'lane_sweeper': {
-        checkCoordPair(mc.pivotOrigin, 'modeConfig.pivotOrigin', errors);
-        if (!Array.isArray(mc.passes) || mc.passes.length < 2) {
-          errors.push('lane_sweeper requires >= 2 passes (perimeter + seam threat)');
-        } else {
-          const hasThreat = mc.passes.some(p => p.isThreat === true);
-          const hasHarmless = mc.passes.some(p => p.isThreat === false);
-          if (!hasThreat || !hasHarmless) {
-            errors.push('lane_sweeper requires both harmless perimeter (isThreat:false) and dangerous seam (isThreat:true) passes');
-          }
-          mc.passes.forEach((p, i) => {
-            checkCoordPair(p.from, `modeConfig.passes[${i}].from`, errors);
-            checkCoordPair(p.to, `modeConfig.passes[${i}].to`, errors);
-            if (segmentCutsGoalCageBack(p.from, p.to)) {
-              errors.push(`modeConfig.passes[${i}] cuts impossibly through goal cage`);
-            }
-          });
-        }
-        break;
-      }
       case 'draw_the_route': {
         if (!mc.thisSpace) {
           errors.push('draw_the_route requires modeConfig.thisSpace');
         } else {
           checkCoordPair([mc.thisSpace.x, mc.thisSpace.y], 'modeConfig.thisSpace', errors);
+          const youSk = (drill.skaters || []).find(s => s.id === drill.youRole);
+          const youStart = youSk?.start || youFreeze?.pos;
+          if (Array.isArray(youStart)) {
+            const distSpace = Math.hypot(youStart[0] - mc.thisSpace.x, youStart[1] - mc.thisSpace.y);
+            if (distSpace < ANTI_GIVEAWAY_MIN_DIST) {
+              errors.push(`Anti-Giveaway violation (${drill.conceptId}): YOU (${drill.youRole}) start [${youStart.join(',')}] is only ${distSpace.toFixed(1)} units from THIS SPACE [${mc.thisSpace.x},${mc.thisSpace.y}] (must be >= ${ANTI_GIVEAWAY_MIN_DIST})`);
+            }
+          }
         }
         if (Array.isArray(mc.idealRoute) && mc.idealRoute.length > 0) {
           checkPointList(mc.idealRoute, 'modeConfig.idealRoute', errors);
@@ -471,7 +530,7 @@ export function validateDrillCatalog(catalog, opts = {}) {
 
   const drills = Array.isArray(catalog.drills) ? catalog.drills : [];
   if (drills.length !== 45 && opts.allowPartial !== true) {
-    catalogErrors.push(`Expected 45/45 playable drills (5 × 9 modes), found ${drills.length}`);
+    catalogErrors.push(`Expected 45/45 playable drills, found ${drills.length}`);
   }
 
   const seenIds = new Set();
@@ -499,9 +558,14 @@ export function validateDrillCatalog(catalog, opts = {}) {
   }
 
   if (drills.length === 45 && opts.allowPartial !== true) {
-    for (const mode of CANONICAL_9_MODES) {
-      if (modeCounts[mode] !== 5) {
-        catalogErrors.push(`Mode "${mode}" has ${modeCounts[mode]} drills (expected balanced 5 drills per mode across all 9 modes)`);
+    for (const retired of RETIRED_MODES) {
+      if ((modeCounts[retired] || 0) !== 0) {
+        catalogErrors.push(`Retired mode "${retired}" still has ${modeCounts[retired]} active drill(s) (expected 0 in v15.7)`);
+      }
+    }
+    for (const mode of ACTIVE_PROVEN_7_MODES) {
+      if ((modeCounts[mode] || 0) < 4) {
+        catalogErrors.push(`Proven mode "${mode}" has only ${modeCounts[mode]} drills (expected >= 4 active drills)`);
       }
     }
   }
@@ -561,7 +625,7 @@ if (isNodeCli) {
     }
 
     console.log(
-      `✅ SYNAPZ v14.1 Drill Schema Validator PASSED: ${report.validCount}/${report.totalCount} playable drills valid (0 errors, ${report.stubConceptsCount} stub concepts) | ${report.conceptsCount}/45 taxonomy concepts | 9×5 Mode balance:`,
+      `✅ SYNAPZ v15.7 Drill Schema & Anti-Giveaway (>=110u) Validator PASSED: ${report.validCount}/${report.totalCount} playable drills valid (0 errors, ${report.stubConceptsCount} stub concepts) | ${report.conceptsCount}/45 taxonomy concepts | Proven 7-Mode distribution:`,
       JSON.stringify(report.modeCounts)
     );
   })().catch((err) => {
